@@ -21,6 +21,16 @@ pnpm dev
 
 Local configuration follows Kaneo's setup: see `ENVIRONMENT_SETUP.md` for environment variables.
 
+## Docker Image
+
+The Dokploy-ready all-in-one image for this fork is published to GitHub Container Registry:
+
+```text
+ghcr.io/alqemist-labs/kaneo:latest
+```
+
+The image is built from `Dockerfile.kaneo` and published automatically on pushes to `main`. Version tags can also be published manually from the `Build & publish Docker image to GHCR` GitHub Actions workflow.
+
 ## Original README
 
 The previous upstream README is preserved here: [README.upstream.md](README.upstream.md).
