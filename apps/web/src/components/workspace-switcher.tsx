@@ -1,5 +1,5 @@
+import { IconBuildingSkyscraper, IconChevronDown } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronDown } from "lucide-react";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
 
@@ -120,15 +120,22 @@ export function WorkspaceSwitcher() {
                   />
                 }
               >
-                <div className="flex items-center min-w-0 w-full">
+                <div className="flex items-center min-w-0 w-full gap-2">
+                  <IconBuildingSkyscraper
+                    aria-hidden
+                    className="size-4 shrink-0 text-sidebar-foreground/55"
+                    stroke={1.5}
+                  />
                   <span
                     className={`truncate text-sm font-medium text-foreground ${isSwitching ? "opacity-50" : ""}`}
                   >
                     {workspace.name}
                   </span>
                 </div>
-                <ChevronDown
-                  className={`ml-1 size-3.5 text-foreground/70 opacity-90 group-hover:opacity-100 data-[state=open]:opacity-100 data-[state=open]:rotate-180 transition-all duration-200 ease-out ${isSwitching ? "animate-spin" : ""}`}
+                <IconChevronDown
+                  aria-hidden
+                  className={`ml-1 size-3.5 shrink-0 text-foreground/70 opacity-90 group-hover:opacity-100 data-[state=open]:opacity-100 data-[state=open]:rotate-180 transition-all duration-200 ease-out ${isSwitching ? "animate-spin" : ""}`}
+                  stroke={1.5}
                   data-state={isOpen ? "open" : "closed"}
                 />
               </DropdownMenuTrigger>

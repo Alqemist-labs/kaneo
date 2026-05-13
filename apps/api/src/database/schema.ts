@@ -13,6 +13,8 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { bytea } from "./bytea-column";
+
 export const userTable = pgTable("user", {
   id: text("id")
     .$defaultFn(() => createId())
@@ -23,6 +25,9 @@ export const userTable = pgTable("user", {
     .$defaultFn(() => false)
     .notNull(),
   image: text("image"),
+  avatarBlob: bytea("avatar_blob"),
+  avatarMimeType: text("avatar_mime_type"),
+  avatarUpdatedAt: timestamp("avatar_updated_at", { mode: "date" }),
   locale: text("locale"),
   createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "date" })

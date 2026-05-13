@@ -308,6 +308,13 @@
 			"sectionTitle": "Información de la cuenta",
 			"sectionSubtitle": "Gestiona tu perfil y detalles de tu cuenta.",
 			"profilePicture": "Foto de perfil",
+			"profilePictureHint": "Si no subes una imagen, se usa tu Gravatar para este correo.",
+			"uploadAvatar": "Subir imagen",
+			"removeAvatar": "Quitar imagen subida",
+			"avatarUploadSuccess": "Foto de perfil actualizada",
+			"avatarRemoveSuccess": "Imagen eliminada; se vuelve a usar Gravatar",
+			"avatarUploadError": "No se pudo subir la imagen",
+			"avatarRemoveError": "No se pudo eliminar la imagen",
 			"fullName": "Nombre completo",
 			"fullNamePlaceholder": "Introduce tu nombre",
 			"email": "Email",
@@ -818,6 +825,7 @@
 		"notifications": "Notificaciones",
 		"sidebar": {
 			"overview": "Vista general",
+			"activityFeed": "Actividad",
 			"projects": "Proyectos",
 			"members": "Miembros",
 			"invitations": "Invitaciones",
@@ -951,8 +959,21 @@
 		"changedDueDate": "ha cambiado la fecha de vencimiento de {{from}} a {{to}}",
 		"changedTitle": "ha cambiado el título de \"{{from}}\" a \"{{to}}\"",
 		"created": "ha creado esta tarea",
+		"commentedOnTask": "comentó",
 		"moved": "ha movido la tarea de \"{{from}}\" a \"{{to}}\"",
 		"githubUser": "Usuario de GitHub",
+		"workspaceFeed": {
+			"pageTitle": "Actividad",
+			"description": "Todas las actualizaciones de tickets, comentarios y cambios en los proyectos del espacio de trabajo, más recientes primero.",
+			"recentTitle": "Reciente",
+			"recentSubtitle": "Agrupado por día, mostrando primero las actualizaciones más recientes.",
+			"emptyTitle": "Sin actividad todavía",
+			"emptyDescription": "Cuando se creen tickets, comentarios o cambios de estado, aparecerán aquí.",
+			"loadMore": "Cargar más",
+			"errorLoading": "No se pudo cargar la actividad.",
+			"openComments": "Abrir tarea y comentarios",
+			"emptyCommentPreview": "(Sin texto de comentario)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "Ver perfil de GitHub",
@@ -1057,6 +1078,22 @@
 			"medium": "Media",
 			"high": "Alta",
 			"urgent": "Urgente"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Tareas",
+			"gantt": "Gantt",
+			"labels": "Labels"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Labels",
+			"noLabelsInWorkspace": "Aún no hay etiquetas definidas para este espacio de trabajo.",
+			"labelColumn": "Etiqueta",
+			"rowTotal": "Total",
+			"progressColumn": "Progreso",
+			"summary": "{{count}} tareas en este proyecto",
+			"loading": "Cargando…",
+			"noLabelsMatchFilter": "Ninguna etiqueta coincide con el filtro actual. Cambia o borra el filtro de etiquetas."
 		},
 		"boardSearchPlaceholder": "Buscar tickets...",
 		"view": {

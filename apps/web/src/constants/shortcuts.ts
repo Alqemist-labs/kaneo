@@ -36,6 +36,7 @@ export const shortcuts = {
     gantt: "g",
     list: "l",
     backlog: "k",
+    labels: "e",
   },
   taskDetails: {
     status: "s",

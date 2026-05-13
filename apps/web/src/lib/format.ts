@@ -43,6 +43,11 @@ export function formatDateMedium(value: DateInput, locale?: string) {
   );
 }
 
+/** Hour + minute only, e.g. "14:14". */
+export function formatTimeOnly(value: DateInput, locale?: string) {
+  return formatDate(value, { timeStyle: "short" }, locale);
+}
+
 /** Locale-aware full date and time (for tooltips next to relative labels like "yesterday"). */
 export function formatDateTime(value: DateInput, locale?: string) {
   return formatDate(

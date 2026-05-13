@@ -1,6 +1,6 @@
 "use client";
 
-import { SearchIcon } from "lucide-react";
+import { IconSearch } from "@tabler/icons-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import SearchCommandMenu from "@/components/search-command-menu";
@@ -28,10 +28,11 @@ export default function Search() {
         type="button"
       >
         <span className="flex grow items-center">
-          <SearchIcon
-            aria-hidden="true"
+          <IconSearch
+            aria-hidden
             className="-ms-1 me-3 text-muted-foreground/80"
             size={16}
+            stroke={1.5}
           />
           <span className="font-normal text-muted-foreground/70">
             {t("navigation:commandPalette.search")}

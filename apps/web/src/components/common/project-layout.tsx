@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, SquareKanban, SquircleDashed } from "lucide-react";
+import { CalendarDays, SquareKanban, SquircleDashed, Tags } from "lucide-react";
 import { type ReactNode, useState } from "react";
+import { useTranslation } from "react-i18next";
 import MobileProjectNav from "@/components/common/header/mobile-project-nav";
 import ProjectCrumbSelect from "@/components/common/header/project-crumb-select";
 import WorkspaceCrumbSelect from "@/components/common/header/workspace-crumb-select";
@@ -26,7 +27,7 @@ type ProjectLayoutProps = {
   headerActions?: ReactNode;
   children: ReactNode;
   showViewSwitcher?: boolean;
-  activeView?: "backlog" | "board" | "gantt";
+  activeView?: "backlog" | "board" | "gantt" | "labels";
 };
 
 export default function ProjectLayout({
@@ -37,6 +38,7 @@ export default function ProjectLayout({
   showViewSwitcher = true,
   activeView,
 }: ProjectLayoutProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { data: project } = useGetProject({ id: projectId, workspaceId });
@@ -51,7 +53,9 @@ export default function ProjectLayout({
       ? "backlog"
       : location.pathname.includes("/gantt")
         ? "gantt"
-        : "board");
+        : location.pathname.includes("/labels")
+          ? "labels"
+          : "board");
 
   const handleNavigateToBacklog = () => {
     navigate({
@@ -74,6 +78,13 @@ export default function ProjectLayout({
     });
   };
 
+  const handleNavigateToLabels = () => {
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/labels",
+      params: { workspaceId, projectId },
+    });
+  };
+
   const handleProjectSwitch = (nextProjectId: string) => {
     navigate({
       to:
@@ -81,7 +92,9 @@ export default function ProjectLayout({
           ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
           : resolvedView === "gantt"
             ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
-            : "/dashboard/workspace/$workspaceId/project/$projectId/board",
+            : resolvedView === "labels"
+              ? "/dashboard/workspace/$workspaceId/project/$projectId/labels"
+              : "/dashboard/workspace/$workspaceId/project/$projectId/board",
       params: {
         workspaceId,
         projectId: nextProjectId,
@@ -135,13 +148,14 @@ export default function ProjectLayout({
                 onSelectBacklog={handleNavigateToBacklog}
                 onSelectBoard={handleNavigateToBoard}
                 onSelectGantt={handleNavigateToGantt}
+                onSelectLabels={handleNavigateToLabels}
                 onSelectProject={handleProjectSwitch}
                 onAddProject={() => setIsCreateProjectModalOpen(true)}
               />
             </div>
 
             {showViewSwitcher && (
-              <div className="hidden h-8 items-center gap-0.5 rounded-lg border border-border/80 bg-background p-0.5 sm:inline-flex">
+              <div className="hidden h-auto max-w-full flex-wrap items-center gap-0.5 rounded-lg border border-border/80 bg-background p-0.5 sm:inline-flex">
                 <Button
                   variant={resolvedView === "backlog" ? "secondary" : "ghost"}
                   size="xs"
@@ -152,7 +166,7 @@ export default function ProjectLayout({
                   )}
                 >
                   <SquircleDashed className="size-3.5" />
-                  Backlog
+                  {t("tasks:projectNav.backlog")}
                 </Button>
                 <Button
                   variant={resolvedView === "board" ? "secondary" : "ghost"}
@@ -164,7 +178,7 @@ export default function ProjectLayout({
                   )}
                 >
                   <SquareKanban className="size-3.5" />
-                  Tasks
+                  {t("tasks:projectNav.tasks")}
                 </Button>
                 <Button
                   variant={resolvedView === "gantt" ? "secondary" : "ghost"}
@@ -176,7 +190,19 @@ export default function ProjectLayout({
                   )}
                 >
                   <CalendarDays className="size-3.5" />
-                  Gantt
+                  {t("tasks:projectNav.gantt")}
+                </Button>
+                <Button
+                  variant={resolvedView === "labels" ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={handleNavigateToLabels}
+                  className={cn(
+                    "h-6 gap-1.5 rounded-md px-2 text-xs",
+                    resolvedView !== "labels" && "text-muted-foreground",
+                  )}
+                >
+                  <Tags className="size-3.5" />
+                  {t("tasks:projectNav.labels")}
                 </Button>
               </div>
             )}

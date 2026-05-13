@@ -310,6 +310,13 @@
 			"sectionTitle": "Информация об аккаунте",
 			"sectionSubtitle": "Управляйте вашим профилем и данными аккаунта.",
 			"profilePicture": "Фото профиля",
+			"profilePictureHint": "If you do not upload a picture, your Gravatar for this email is used.",
+			"uploadAvatar": "Upload image",
+			"removeAvatar": "Remove uploaded picture",
+			"avatarUploadSuccess": "Profile picture updated",
+			"avatarRemoveSuccess": "Picture removed; Gravatar is used again",
+			"avatarUploadError": "Could not upload picture",
+			"avatarRemoveError": "Could not remove picture",
 			"fullName": "Полное имя",
 			"fullNamePlaceholder": "Введите ваше имя",
 			"email": "Электронная почта",
@@ -1038,6 +1045,7 @@
 		"notifications": "Уведомления",
 		"sidebar": {
 			"overview": "Обзор",
+			"activityFeed": "Активность",
 			"projects": "Проекты",
 			"members": "Участники",
 			"invitations": "Приглашения",
@@ -1172,7 +1180,22 @@
 		"setDueDate": "установил срок выполнения: {{date}}",
 		"changedDueDate": "изменил срок выполнения с {{from}} на {{to}}",
 		"changedTitle": "изменил название с «{{from}}» на «{{to}}»",
+		"created": "создал эту задачу",
+		"moved": "переместил задачу из «{{from}}» в «{{to}}»",
+		"commentedOnTask": "оставил комментарий",
 		"githubUser": "Пользователь GitHub",
+		"workspaceFeed": {
+			"pageTitle": "Активность",
+			"description": "Все обновления задач, комментарии и изменения по проектам рабочего пространства, сначала новые.",
+			"recentTitle": "Недавнее",
+			"recentSubtitle": "Сгруппировано по дням, сначала самые свежие обновления.",
+			"emptyTitle": "Пока нет активности",
+			"emptyDescription": "Здесь появятся новые задачи, комментарии и смены статуса.",
+			"loadMore": "Загрузить ещё",
+			"errorLoading": "Не удалось загрузить активность.",
+			"openComments": "Open task & comments",
+			"emptyCommentPreview": "(No comment text)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "Открыть профиль GitHub",
@@ -1277,6 +1300,22 @@
 			"medium": "Средний",
 			"high": "Высокий",
 			"urgent": "Срочный"
+		},
+		"projectNav": {
+			"backlog": "Бэклог",
+			"tasks": "Задачи",
+			"gantt": "Гантт",
+			"labels": "Метки"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Метки",
+			"noLabelsInWorkspace": "Для этого пространства ещё не заданы метки.",
+			"labelColumn": "Метка",
+			"rowTotal": "Всего",
+			"progressColumn": "Прогресс",
+			"summary": "{{count}} задач в этом проекте",
+			"loading": "Загрузка…",
+			"noLabelsMatchFilter": "Ни одна метка не соответствует текущему фильтру. Измените или сбросьте фильтр по меткам."
 		},
 		"boardSearchPlaceholder": "Поиск задач...",
 		"view": {

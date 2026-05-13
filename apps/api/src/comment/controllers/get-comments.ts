@@ -1,6 +1,7 @@
 import { asc, eq } from "drizzle-orm";
 import db from "../../database";
 import { commentTable, userTable } from "../../database/schema";
+import { resolveUserDisplayImageUrl } from "../../utils/user-display-image";
 
 async function getComments(taskId: string) {
   const comments = await db
@@ -12,7 +13,9 @@ async function getComments(taskId: string) {
       createdAt: commentTable.createdAt,
       updatedAt: commentTable.updatedAt,
       userName: userTable.name,
+      userEmail: userTable.email,
       userImage: userTable.image,
+      userAvatarUpdatedAt: userTable.avatarUpdatedAt,
     })
     .from(commentTable)
     .leftJoin(userTable, eq(commentTable.userId, userTable.id))
@@ -28,7 +31,15 @@ async function getComments(taskId: string) {
     updatedAt: c.updatedAt,
     user: {
       name: c.userName ?? "",
-      image: c.userImage,
+      image:
+        c.userId && c.userEmail
+          ? resolveUserDisplayImageUrl({
+              id: c.userId,
+              email: c.userEmail,
+              image: c.userImage,
+              avatarUpdatedAt: c.userAvatarUpdatedAt,
+            })
+          : null,
     },
   }));
 }

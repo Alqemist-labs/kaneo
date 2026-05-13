@@ -2,12 +2,13 @@ import { Hono } from "hono";
 import { describeRoute, resolver, validator } from "hono-openapi";
 import * as v from "valibot";
 import { subscribeToEvent } from "../events";
-import { activitySchema } from "../schemas";
+import { activitySchema, workspaceActivityFeedItemSchema } from "../schemas";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createActivity from "./controllers/create-activity";
 import createComment from "./controllers/create-comment";
 import deleteComment from "./controllers/delete-comment";
 import getActivities from "./controllers/get-activities";
+import getWorkspaceActivities from "./controllers/get-workspace-activities";
 import updateComment from "./controllers/update-comment";
 
 const activity = new Hono<{
@@ -15,6 +16,62 @@ const activity = new Hono<{
     userId: string;
   };
 }>()
+  .get(
+    "/workspace/:workspaceId",
+    describeRoute({
+      operationId: "getWorkspaceActivities",
+      tags: ["Activity"],
+      description:
+        "List recent task activities across all projects in a workspace (newest first)",
+      responses: {
+        200: {
+          description: "Activities with task and project context",
+          content: {
+            "application/json": {
+              schema: resolver(v.array(workspaceActivityFeedItemSchema)),
+            },
+          },
+        },
+      },
+    }),
+    workspaceAccess.fromParam("workspaceId"),
+    validator("param", v.object({ workspaceId: v.string() })),
+    validator(
+      "query",
+      v.object({
+        limit: v.optional(
+          v.pipe(
+            v.string(),
+            v.transform((s) => Number.parseInt(s, 10)),
+            v.number(),
+            v.integer(),
+            v.minValue(1),
+            v.maxValue(100),
+          ),
+        ),
+        offset: v.optional(
+          v.pipe(
+            v.string(),
+            v.transform((s) => Number.parseInt(s, 10)),
+            v.number(),
+            v.integer(),
+            v.minValue(0),
+          ),
+        ),
+      }),
+    ),
+    async (c) => {
+      const { workspaceId } = c.req.valid("param");
+      const query = c.req.valid("query");
+      const limit = query.limit ?? 50;
+      const offset = query.offset ?? 0;
+      const items = await getWorkspaceActivities(workspaceId, {
+        limit,
+        offset,
+      });
+      return c.json(items);
+    },
+  )
   .get(
     "/:taskId",
     describeRoute({

@@ -222,23 +222,23 @@ export default function TaskLabelsPopover({
           <button
             key={label.id}
             type="button"
-            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent/50 text-left"
+            className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-accent/50"
             onClick={() => handleToggleLabel(label.id)}
           >
-            <div className="flex-shrink-0 w-3 flex justify-center">
+            <div className="flex w-3 shrink-0 items-center justify-center">
               {taskLabelNames.includes(label.name) && (
                 <Check className="w-3 h-3" />
               )}
             </div>
             <span
-              className="w-2 h-2 rounded-full flex-shrink-0"
+              className="size-2 shrink-0 rounded-full"
               style={{
                 backgroundColor:
                   labelColors.find((c) => c.value === label.color)?.color ||
                   "var(--color-neutral-400)",
               }}
             />
-            <span className="max-w-20 truncate">{label.name}</span>
+            <span className="min-w-0 flex-1 break-words">{label.name}</span>
           </button>
         ))}
 
@@ -248,21 +248,21 @@ export default function TaskLabelsPopover({
         {isCreatingNewLabel && (
           <button
             type="button"
-            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent/50 text-left"
+            className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-accent/50"
             onClick={handleCreateNewClick}
           >
-            <div className="flex-shrink-0 w-3 flex justify-center">
+            <div className="flex w-3 shrink-0 items-center justify-center">
               <Plus className="w-3 h-3" />
             </div>
             <span
-              className="w-2 h-2 rounded-full flex-shrink-0"
+              className="size-2 shrink-0 rounded-full"
               style={{
                 backgroundColor:
                   labelColors.find((c) => c.value === selectedColor)?.color ||
                   "var(--color-neutral-400)",
               }}
             />
-            <span className="truncate">
+            <span className="min-w-0 flex-1 break-words">
               {t("tasks:popover.labels.create", { name: searchValue })}
             </span>
           </button>
@@ -292,20 +292,20 @@ export default function TaskLabelsPopover({
             key={color.value}
             type="button"
             className={cn(
-              "w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent/50 text-left",
+              "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-accent/50",
               selectedColor === color.value && "bg-accent/30",
             )}
             onClick={() => handleColorSelect(color.value as LabelColor)}
           >
             <span
-              className="w-2 h-2 rounded-full flex-shrink-0"
+              className="size-2 shrink-0 rounded-full"
               style={{ backgroundColor: color.color }}
             />
-            <span className="truncate">
+            <span className="min-w-0 flex-1 break-words">
               {t(`tasks:popover.labels.colors.${color.key}`)}
             </span>
             {selectedColor === color.value && (
-              <Check className="w-3 h-3 ml-auto" />
+              <Check className="ml-auto size-3 shrink-0" />
             )}
           </button>
         ))}
@@ -318,7 +318,7 @@ export default function TaskLabelsPopover({
       <PopoverTrigger asChild nativeButton={triggerNativeButton}>
         {children}
       </PopoverTrigger>
-      <PopoverContent className="p-0" align="start">
+      <PopoverContent className="max-w-sm min-w-[12rem] p-0" align="start">
         {step === "select" && renderSelectStep()}
         {step === "color" && renderColorStep()}
       </PopoverContent>

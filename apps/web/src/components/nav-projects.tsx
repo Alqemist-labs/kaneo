@@ -1,13 +1,15 @@
+import {
+  IconChevronRight,
+  IconDots,
+  IconFolder,
+  IconLayoutKanban,
+  IconLink,
+  IconPlus,
+  IconSettings,
+  IconTrash,
+} from "@tabler/icons-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "@tanstack/react-router";
-import {
-  ChevronRight,
-  Folder,
-  Forward,
-  MoreHorizontal,
-  Settings,
-  Trash2,
-} from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
@@ -31,9 +33,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import icons from "@/constants/project-icons";
 import useDeleteProject from "@/hooks/mutations/project/use-delete-project";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 import type { ProjectWithTasks } from "@/types/project";
 import CreateProjectModal from "./shared/modals/create-project-modal";
@@ -96,24 +100,48 @@ export function NavProjects() {
           <CollapsibleTrigger
             className="data-panel-open:[&_svg]:rotate-90"
             render={
-              <SidebarGroupLabel className="h-7 cursor-pointer justify-between px-0 text-sidebar-accent-foreground" />
+              <SidebarGroupLabel className="h-7 cursor-pointer justify-between gap-2 px-0 text-sidebar-accent-foreground" />
             }
           >
-            <span>{t("navigation:sidebar.projects")}</span>
-            <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground/60 transition-transform duration-200" />
+            <span className="flex min-w-0 flex-1 items-center gap-2">
+              <IconLayoutKanban
+                aria-hidden
+                className="size-3.5 shrink-0 text-sidebar-foreground/55"
+                stroke={1.5}
+              />
+              <span className="truncate">
+                {t("navigation:sidebar.projects")}
+              </span>
+            </span>
+            <IconChevronRight
+              aria-hidden
+              className="size-3.5 shrink-0 text-sidebar-foreground/60 transition-transform duration-200"
+              stroke={1.5}
+            />
           </CollapsibleTrigger>
           <CollapsiblePanel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
                 {projects?.map((project) => {
+                  const ProjectIcon =
+                    icons[project.icon as keyof typeof icons] ?? icons.Layout;
                   return (
                     <SidebarMenuItem key={project.id}>
                       <SidebarMenuButton
                         isActive={isCurrentProject(project.id)}
                         size="default"
-                        className="h-8 gap-0 ps-3.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
+                        className="h-8 gap-2.5 ps-2.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
                         onClick={() => handleProjectClick(project)}
                       >
+                        <ProjectIcon
+                          aria-hidden
+                          className={cn(
+                            "size-4 shrink-0 text-sidebar-foreground/55",
+                            isCurrentProject(project.id) &&
+                              "text-sidebar-accent-foreground",
+                          )}
+                          strokeWidth={1.5}
+                        />
                         <span>{project.name}</span>
                       </SidebarMenuButton>
 
@@ -126,7 +154,12 @@ export function NavProjects() {
                             />
                           }
                         >
-                          <MoreHorizontal />
+                          <IconDots
+                            aria-hidden
+                            size={16}
+                            stroke={1.5}
+                            className="text-sidebar-foreground/80"
+                          />
                           <span className="sr-only">
                             {t("navigation:sidebar.more")}
                           </span>
@@ -140,7 +173,12 @@ export function NavProjects() {
                             className="h-7 items-start cursor-pointer text-sm"
                             onClick={() => handleProjectClick(project)}
                           >
-                            <Folder className="text-muted-foreground" />
+                            <IconFolder
+                              aria-hidden
+                              size={16}
+                              stroke={1.5}
+                              className="text-muted-foreground"
+                            />
                             <span>
                               {t("navigation:projectList.viewProject")}
                             </span>
@@ -156,7 +194,12 @@ export function NavProjects() {
                               );
                             }}
                           >
-                            <Forward className="text-muted-foreground" />
+                            <IconLink
+                              aria-hidden
+                              size={16}
+                              stroke={1.5}
+                              className="text-muted-foreground"
+                            />
                             <span>
                               {t("navigation:projectList.shareProject")}
                             </span>
@@ -170,7 +213,12 @@ export function NavProjects() {
                               });
                             }}
                           >
-                            <Settings className="text-muted-foreground" />
+                            <IconSettings
+                              aria-hidden
+                              size={16}
+                              stroke={1.5}
+                              className="text-muted-foreground"
+                            />
                             <span>
                               {t("navigation:projectList.projectSettings")}
                             </span>
@@ -183,7 +231,12 @@ export function NavProjects() {
                               setIsDeleteProjectModalOpen(true);
                             }}
                           >
-                            <Trash2 className="text-destructive" />
+                            <IconTrash
+                              aria-hidden
+                              size={16}
+                              stroke={1.5}
+                              className="text-destructive"
+                            />
                             <span>
                               {t("navigation:projectList.deleteProject")}
                             </span>
@@ -197,9 +250,15 @@ export function NavProjects() {
                 <SidebarMenuItem className="mt-1">
                   <SidebarMenuButton
                     size="default"
-                    className="h-8 ps-3.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
+                    className="h-8 gap-2.5 ps-2.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
                     onClick={() => setIsCreateProjectModalOpen(true)}
                   >
+                    <IconPlus
+                      aria-hidden
+                      size={16}
+                      stroke={1.5}
+                      className="shrink-0 text-sidebar-foreground/55"
+                    />
                     <span>{t("navigation:projectList.addProject")}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

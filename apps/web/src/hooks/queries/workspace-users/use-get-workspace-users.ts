@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { authClient } from "@/lib/auth-client";
+import { fetchWorkspaceMemberRows } from "@/fetchers/workspace-user/fetch-workspace-member-rows";
 
 type GetWorkspaceUsersRequest = {
   workspaceId?: string;
@@ -10,6 +10,7 @@ type GetWorkspaceUsersRequest = {
   filterField?: string;
   filterOperator?: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "contains";
   filterValue?: string;
+  enabled?: boolean;
 };
 
 function useGetWorkspaceUsers({
@@ -21,6 +22,7 @@ function useGetWorkspaceUsers({
   filterField,
   filterOperator,
   filterValue,
+  enabled = true,
 }: GetWorkspaceUsersRequest) {
   return useQuery({
     queryKey: [
@@ -34,20 +36,8 @@ function useGetWorkspaceUsers({
       filterOperator,
       filterValue,
     ],
-    enabled: !!workspaceId,
-    queryFn: async () => {
-      const { data, error } = await authClient.organization.listMembers({
-        query: {
-          organizationId: workspaceId,
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message || "Failed to get workspace users");
-      }
-
-      return data.members;
-    },
+    enabled: enabled && !!workspaceId,
+    queryFn: () => fetchWorkspaceMemberRows(workspaceId as string),
   });
 }
 

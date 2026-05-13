@@ -308,6 +308,13 @@
 			"sectionTitle": "Accountinformatie",
 			"sectionSubtitle": "Beheer je profiel- en accountgegevens.",
 			"profilePicture": "Profielfoto",
+			"profilePictureHint": "Zonder upload wordt je Gravatar voor dit e-mailadres gebruikt.",
+			"uploadAvatar": "Afbeelding uploaden",
+			"removeAvatar": "Geüploade foto verwijderen",
+			"avatarUploadSuccess": "Profielfoto bijgewerkt",
+			"avatarRemoveSuccess": "Foto verwijderd; Gravatar opnieuw gebruikt",
+			"avatarUploadError": "Upload mislukt",
+			"avatarRemoveError": "Verwijderen mislukt",
 			"fullName": "Volledige naam",
 			"fullNamePlaceholder": "Voer je naam in",
 			"email": "E-mail",
@@ -818,6 +825,7 @@
 		"notifications": "Meldingen",
 		"sidebar": {
 			"overview": "Overzicht",
+			"activityFeed": "Activiteit",
 			"projects": "Projecten",
 			"members": "Leden",
 			"invitations": "Uitnodigingen",
@@ -952,8 +960,21 @@
 		"changedDueDate": "heeft de einddatum gewijzigd van {{from}} naar {{to}}",
 		"changedTitle": "heeft de titel gewijzigd van \"{{from}}\" naar \"{{to}}\"",
 		"created": "heeft deze taak aangemaakt",
+		"commentedOnTask": "heeft gereageerd",
 		"moved": "heeft de taak van \"{{from}}\" naar \"{{to}}\" verplaatst",
 		"githubUser": "GitHub-gebruiker",
+		"workspaceFeed": {
+			"pageTitle": "Activiteit",
+			"description": "Alle ticketupdates, opmerkingen en wijzigingen in de projecten van deze workspace, nieuwste eerst.",
+			"recentTitle": "Recent",
+			"recentSubtitle": "Gegroepeerd per dag, met de nieuwste updates eerst.",
+			"emptyTitle": "Nog geen activiteit",
+			"emptyDescription": "Nieuwe tickets, reacties en statuswijzigingen verschijnen hier.",
+			"loadMore": "Meer laden",
+			"errorLoading": "Activiteit laden is mislukt.",
+			"openComments": "Taak & opmerkingen openen",
+			"emptyCommentPreview": "(Geen opmerkingstekst)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "GitHub-profiel bekijken",
@@ -1058,6 +1079,22 @@
 			"medium": "Gemiddeld",
 			"high": "Hoog",
 			"urgent": "Urgent"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Taken",
+			"gantt": "Gantt",
+			"labels": "Labels"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Labels",
+			"noLabelsInWorkspace": "Nog geen labels voor deze workspace.",
+			"labelColumn": "Label",
+			"rowTotal": "Totaal",
+			"progressColumn": "Voortgang",
+			"summary": "{{count}} taken in dit project",
+			"loading": "Laden…",
+			"noLabelsMatchFilter": "Geen labels komen overeen met het huidige filter. Pas het label-filter aan of wis het."
 		},
 		"boardSearchPlaceholder": "Tickets zoeken...",
 		"view": {

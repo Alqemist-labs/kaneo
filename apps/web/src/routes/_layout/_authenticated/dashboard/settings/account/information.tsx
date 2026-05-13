@@ -8,6 +8,7 @@ import { z } from "zod";
 import PageTitle from "@/components/page-title";
 import useAuth from "@/components/providers/auth-provider/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -19,6 +20,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import useUpdateUserProfile from "@/hooks/mutations/use-update-user-profile";
+import {
+  useDeleteUserAvatar,
+  useUploadUserAvatar,
+} from "@/hooks/mutations/use-user-avatar";
 import { toast } from "@/lib/toast";
 
 export const Route = createFileRoute(
@@ -51,6 +56,18 @@ function RouteComponent() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { mutateAsync: updateProfile } = useUpdateUserProfile();
+  const { mutate: uploadAvatar, isPending: isUploadingAvatar } =
+    useUploadUserAvatar();
+  const { mutate: removeAvatar, isPending: isRemovingAvatar } =
+    useDeleteUserAvatar();
+  const avatarFileInputRef = useRef<HTMLInputElement>(null);
+  const initials =
+    user?.name?.charAt(0).toUpperCase() ||
+    user?.email?.substring(0, 1).toUpperCase() ||
+    "?";
+
+  const canRemoveUploadedAvatar =
+    typeof user?.image === "string" && user.image.includes("/user/avatar/");
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isSavingRef = useRef(false);
   const queuedSaveRef = useRef<ProfileFormValues | null>(null);
@@ -188,18 +205,57 @@ function RouteComponent() {
           </div>
 
           <div className="space-y-4 border border-border rounded-md p-4 bg-sidebar">
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
+            <input
+              ref={avatarFileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                uploadAvatar(file);
+              }}
+            />
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
                 <p className="text-sm font-medium">
                   {t("settings:informationPage.profilePicture")}
                 </p>
+                <p className="text-xs text-muted-foreground max-w-md">
+                  {t("settings:informationPage.profilePictureHint")}
+                </p>
               </div>
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={user?.image ?? ""} alt={user?.name || ""} />
-                <AvatarFallback className="text-xs font-medium border border-border/30">
-                  {user?.name?.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+              <div className="flex flex-wrap items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarImage src={user?.image ?? ""} alt={user?.name || ""} />
+                  <AvatarFallback className="text-xs font-medium border border-border/30">
+                    {initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUploadingAvatar || isRemovingAvatar}
+                    onClick={() => avatarFileInputRef.current?.click()}
+                  >
+                    {t("settings:informationPage.uploadAvatar")}
+                  </Button>
+                  {canRemoveUploadedAvatar ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isUploadingAvatar || isRemovingAvatar}
+                      onClick={() => removeAvatar()}
+                    >
+                      {t("settings:informationPage.removeAvatar")}
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
             </div>
 
             <Separator />

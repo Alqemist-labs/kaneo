@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchWorkspaceMemberRows } from "@/fetchers/workspace-user/fetch-workspace-member-rows";
 import { authClient } from "@/lib/auth-client";
 
 type GetFullWorkspaceRequest = {
@@ -29,7 +30,31 @@ function useGetFullWorkspace({
         throw new Error(error.message || "Failed to get full workspace");
       }
 
-      return data;
+      if (!data) {
+        throw new Error("Failed to get full workspace");
+      }
+
+      if (!workspaceId || !data.members?.length) {
+        return data;
+      }
+
+      const kaneoMembers = await fetchWorkspaceMemberRows(workspaceId);
+      const imageByUserId = new Map(
+        kaneoMembers.map((m) => [m.userId, m.user.image]),
+      );
+
+      return {
+        ...data,
+        members: data.members.map((m) => ({
+          ...m,
+          user: m.user
+            ? {
+                ...m.user,
+                image: imageByUserId.get(m.userId) ?? m.user.image,
+              }
+            : m.user,
+        })),
+      };
     },
   });
 }

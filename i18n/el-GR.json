@@ -310,6 +310,13 @@
 			"sectionTitle": "Πληροφορίες λογαριασμού",
 			"sectionSubtitle": "Διαχειριστείτε το προφίλ και τα στοιχεία του λογαριασμού σας.",
 			"profilePicture": "Εικόνα προφίλ",
+			"profilePictureHint": "If you do not upload a picture, your Gravatar for this email is used.",
+			"uploadAvatar": "Upload image",
+			"removeAvatar": "Remove uploaded picture",
+			"avatarUploadSuccess": "Profile picture updated",
+			"avatarRemoveSuccess": "Picture removed; Gravatar is used again",
+			"avatarUploadError": "Could not upload picture",
+			"avatarRemoveError": "Could not remove picture",
 			"fullName": "Ονοματεπώνυμο",
 			"fullNamePlaceholder": "Εισαγάγετε το όνομά σας",
 			"email": "Email",
@@ -1032,6 +1039,7 @@
 		"notifications": "Ειδοποιήσεις",
 		"sidebar": {
 			"overview": "Επισκόπηση",
+			"activityFeed": "Δραστηριότητα",
 			"projects": "Έργα",
 			"members": "Μέλη",
 			"invitations": "Προσκλήσεις",
@@ -1166,8 +1174,21 @@
 		"changedDueDate": "άλλαξε την ημερομηνία λήξης από {{from}} σε {{to}}",
 		"changedTitle": "άλλαξε τον τίτλο από \"{{from}}\" σε \"{{to}}\"",
 		"created": "δημιούργησε αυτή την εργασία",
+		"commentedOnTask": "σχολίασε",
 		"moved": "μετακίνησε την εργασία από \"{{from}}\" σε \"{{to}}\"",
 		"githubUser": "Χρήστης GitHub",
+		"workspaceFeed": {
+			"pageTitle": "Δραστηριότητα",
+			"description": "Όλες οι ενημερώσεις εργασιών, σχόλια και αλλαγές στα έργα του χώρου εργασίας, από τις νεότερες προς τις παλαιότερες.",
+			"recentTitle": "Πρόσφατα",
+			"recentSubtitle": "Ομαδοποιημένα ανά ημέρα, οι πιο πρόσφατες ενημερώσεις εμφανίζονται πρώτες.",
+			"emptyTitle": "Δεν υπάρχει ακόμη δραστηριότητα",
+			"emptyDescription": "Νέες εργασίες, σχόλια και αλλαγές κατάστασης θα εμφανίζονται εδώ.",
+			"loadMore": "Φόρτωση περισσότερων",
+			"errorLoading": "Δεν ήταν δυνατή η φόρτωση της δραστηριότητας.",
+			"openComments": "Open task & comments",
+			"emptyCommentPreview": "(No comment text)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "Προβολή προφίλ GitHub",
@@ -1272,6 +1293,22 @@
 			"medium": "Μεσαία",
 			"high": "Υψηλή",
 			"urgent": "Επείγουσα"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Εργασίες",
+			"gantt": "Gantt",
+			"labels": "Ετικέτες"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Ετικέτες",
+			"noLabelsInWorkspace": "Δεν έχουν οριστεί ετικέτες για αυτόν τον χώρο εργασίας.",
+			"labelColumn": "Ετικέτα",
+			"rowTotal": "Σύνολο",
+			"progressColumn": "Πρόοδος",
+			"summary": "{{count}} εργασίες σε αυτό το έργο",
+			"loading": "Φόρτωση…",
+			"noLabelsMatchFilter": "Καμία ετικέτα δεν ταιριάζει με το τρέχον φίλτρο. Αλλάξτε ή εκκαθαρίστε το φίλτρο ετικετών."
 		},
 		"boardSearchPlaceholder": "Αναζήτηση αιτημάτων...",
 		"view": {

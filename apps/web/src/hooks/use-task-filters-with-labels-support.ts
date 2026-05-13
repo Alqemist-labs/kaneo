@@ -186,6 +186,8 @@ export function useTaskFiltersWithLabelsSupport(
           ...column,
           tasks: filterTasks(column.tasks),
         })) ?? [],
+      plannedTasks: filterTasks(project.plannedTasks ?? []),
+      archivedTasks: filterTasks(project.archivedTasks ?? []),
     };
   }, [project, filterTasks]);
 

@@ -310,6 +310,13 @@
 			"sectionTitle": "Информации за сметката",
 			"sectionSubtitle": "Управувај со твојот профил и детали за сметката.",
 			"profilePicture": "Профилна слика",
+			"profilePictureHint": "If you do not upload a picture, your Gravatar for this email is used.",
+			"uploadAvatar": "Upload image",
+			"removeAvatar": "Remove uploaded picture",
+			"avatarUploadSuccess": "Profile picture updated",
+			"avatarRemoveSuccess": "Picture removed; Gravatar is used again",
+			"avatarUploadError": "Could not upload picture",
+			"avatarRemoveError": "Could not remove picture",
 			"fullName": "Целосно име",
 			"fullNamePlaceholder": "Внеси го твоето име",
 			"email": "Е-пошта",
@@ -1032,6 +1039,7 @@
 		"notifications": "Известувања",
 		"sidebar": {
 			"overview": "Преглед",
+			"activityFeed": "Активност",
 			"projects": "Проекти",
 			"members": "Членови",
 			"invitations": "Покани",
@@ -1166,8 +1174,21 @@
 		"changedDueDate": "го промени краениот рок од {{from}} во {{to}}",
 		"changedTitle": "го промени насловот од \"{{from}}\" во \"{{to}}\"",
 		"created": "ја создаде задачата",
+		"commentedOnTask": "коментираше",
 		"moved": "ја премести задачата од \"{{from}}\" во \"{{to}}\"",
 		"githubUser": "GitHub корисник",
+		"workspaceFeed": {
+			"pageTitle": "Активност",
+			"description": "Сите ажурирања на задачи, коментари и промени низ проектите во работниот простор, прво најновите.",
+			"recentTitle": "Неодамнешни",
+			"recentSubtitle": "Групирано по ден, прво најновите ажурирања.",
+			"emptyTitle": "Сè уште нема активност",
+			"emptyDescription": "Кога ќе се создадат задачи, коментари или промени на статус, ќе се појават тука.",
+			"loadMore": "Вчитај повеќе",
+			"errorLoading": "Не можеше да се вчита активноста.",
+			"openComments": "Open task & comments",
+			"emptyCommentPreview": "(No comment text)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "Погледни GitHub профил",
@@ -1272,6 +1293,22 @@
 			"medium": "Среден",
 			"high": "Висок",
 			"urgent": "Итен"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Задачи",
+			"gantt": "Gantt",
+			"labels": "Labels"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Labels",
+			"noLabelsInWorkspace": "Нема дефинирани labels за овој workspace.",
+			"labelColumn": "Label",
+			"rowTotal": "Вкупно",
+			"progressColumn": "Напредок",
+			"summary": "{{count}} задачи во овој проект",
+			"loading": "Се вчитува…",
+			"noLabelsMatchFilter": "Ниту еден label не одговара на тековниот филтер. Променете или исчистете го филтерот за labels."
 		},
 		"boardSearchPlaceholder": "Пребарај тикети...",
 		"view": {

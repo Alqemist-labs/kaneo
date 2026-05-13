@@ -310,6 +310,13 @@
 			"sectionTitle": "Informations sur le compte",
 			"sectionSubtitle": "Gérez votre profil et les détails de votre compte.",
 			"profilePicture": "Photo de profil",
+			"profilePictureHint": "Sans envoi de fichier, votre Gravatar (lié à cet e-mail) est affiché.",
+			"uploadAvatar": "Envoyer une image",
+			"removeAvatar": "Supprimer la photo envoyée",
+			"avatarUploadSuccess": "Photo de profil mise à jour",
+			"avatarRemoveSuccess": "Photo supprimée ; retour au Gravatar",
+			"avatarUploadError": "Échec de l’envoi de la photo",
+			"avatarRemoveError": "Échec de la suppression",
 			"fullName": "Nom complet",
 			"fullNamePlaceholder": "Entrez votre nom",
 			"email": "Email",
@@ -1032,6 +1039,7 @@
 		"notifications": "Notifications",
 		"sidebar": {
 			"overview": "Vue d'ensemble",
+			"activityFeed": "Activité",
 			"projects": "Projets",
 			"members": "Membres",
 			"invitations": "Invitations",
@@ -1166,8 +1174,21 @@
 		"changedDueDate": "a changé la date d'échéance de {{from}} à {{to}}",
 		"changedTitle": "a changé le titre de \"{{from}}\" à \"{{to}}\"",
 		"created": "a créé cette tâche",
+		"commentedOnTask": "a commenté",
 		"moved": "a déplacé la tâche de \"{{from}}\" à \"{{to}}\"",
 		"githubUser": "GitHub User",
+		"workspaceFeed": {
+			"pageTitle": "Fil d'activité",
+			"description": "Toutes les mises à jour des tickets, commentaires et changements dans les projets de cet espace, des plus récentes aux plus anciennes.",
+			"recentTitle": "Récent",
+			"recentSubtitle": "Groupé par jour, des plus récents aux plus anciens.",
+			"emptyTitle": "Pas encore d'activité",
+			"emptyDescription": "Les créations de tickets, commentaires et changements de statut apparaîtront ici.",
+			"loadMore": "Charger plus",
+			"errorLoading": "Impossible de charger l'activité.",
+			"openComments": "Ouvrir la tâche et les commentaires",
+			"emptyCommentPreview": "(Commentaire vide)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "View GitHub Profile",
@@ -1272,6 +1293,22 @@
 			"medium": "Moyenne",
 			"high": "Haute",
 			"urgent": "Urgente"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Tâches",
+			"gantt": "Gantt",
+			"labels": "Labels"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Labels",
+			"noLabelsInWorkspace": "Aucun label défini pour cet espace de travail.",
+			"labelColumn": "Label",
+			"rowTotal": "Total",
+			"progressColumn": "Progression",
+			"summary": "{{count}} tâches dans ce projet",
+			"loading": "Chargement…",
+			"noLabelsMatchFilter": "Aucun label ne correspond au filtre actuel. Modifiez ou réinitialisez le filtre sur les labels."
 		},
 		"boardSearchPlaceholder": "Rechercher des tickets...",
 		"view": {

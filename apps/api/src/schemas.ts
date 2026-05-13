@@ -42,6 +42,35 @@ export const taskSchema = v.object({
   createdAt: v.date(),
 });
 
+export const workspaceActivityFeedTaskSchema = v.object({
+  id: v.string(),
+  title: v.string(),
+  number: v.nullable(v.number()),
+});
+
+export const workspaceActivityFeedProjectSchema = v.object({
+  id: v.string(),
+  name: v.string(),
+  slug: v.string(),
+});
+
+export const workspaceActivityFeedItemSchema = v.object({
+  id: v.string(),
+  taskId: v.string(),
+  type: v.string(),
+  createdAt: v.date(),
+  updatedAt: v.date(),
+  userId: v.nullable(v.string()),
+  content: v.nullable(v.string()),
+  eventData: v.nullable(v.record(v.string(), v.unknown())),
+  externalUserName: v.nullable(v.string()),
+  externalUserAvatar: v.nullable(v.string()),
+  externalSource: v.nullable(v.string()),
+  externalUrl: v.nullable(v.string()),
+  task: workspaceActivityFeedTaskSchema,
+  project: workspaceActivityFeedProjectSchema,
+});
+
 export const activitySchema = v.object({
   id: v.string(),
   taskId: v.string(),

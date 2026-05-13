@@ -459,7 +459,9 @@ function BulkToolbar() {
                             className="gap-1.5 px-3"
                           >
                             <span className="shrink-0">{item.icon}</span>
-                            <span className="flex-1 text-sm">{item.label}</span>
+                            <span className="min-w-0 flex-1 break-words text-sm">
+                              {item.label}
+                            </span>
                           </CommandItem>
                         )}
                       </CommandCollection>

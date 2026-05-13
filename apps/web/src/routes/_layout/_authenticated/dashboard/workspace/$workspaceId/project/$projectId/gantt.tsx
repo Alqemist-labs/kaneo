@@ -20,7 +20,9 @@ import PageTitle from "@/components/page-title";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { shortcuts } from "@/constants/shortcuts";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
+import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/cn";
 import { getStatusLabel } from "@/lib/i18n/domain";
@@ -52,6 +54,7 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data: project } = useGetTasks(projectId);
   const weekStartsOn = useUserPreferencesStore((state) => state.weekStartsOn);
+  const setViewMode = useUserPreferencesStore((state) => state.setViewMode);
   const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
   const [isTaskRailOpen, setIsTaskRailOpen] = useState(false);
@@ -62,6 +65,40 @@ function RouteComponent() {
   const showTaskRail = !isMobile || isTaskRailOpen;
   const timelineTrackRef = useRef<HTMLDivElement>(null);
   const [pixelsPerDay, setPixelsPerDay] = useState(44);
+
+  useRegisterShortcuts({
+    sequentialShortcuts: {
+      [shortcuts.view.prefix]: {
+        [shortcuts.view.board]: () => {
+          setViewMode("board");
+          navigate({
+            to: "/dashboard/workspace/$workspaceId/project/$projectId/board",
+            params: { workspaceId, projectId },
+          });
+        },
+        [shortcuts.view.list]: () => {
+          setViewMode("list");
+          navigate({
+            to: "/dashboard/workspace/$workspaceId/project/$projectId/board",
+            params: { workspaceId, projectId },
+          });
+        },
+        [shortcuts.view.gantt]: () => {},
+        [shortcuts.view.labels]: () => {
+          navigate({
+            to: "/dashboard/workspace/$workspaceId/project/$projectId/labels",
+            params: { workspaceId, projectId },
+          });
+        },
+        [shortcuts.view.backlog]: () => {
+          navigate({
+            to: "/dashboard/workspace/$workspaceId/project/$projectId/backlog",
+            params: { workspaceId, projectId },
+          });
+        },
+      },
+    },
+  });
 
   useEffect(() => {
     if (!isMobile) {

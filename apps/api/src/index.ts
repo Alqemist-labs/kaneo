@@ -48,6 +48,8 @@ import task from "./task";
 import taskRelation from "./task-relation";
 import telegramIntegration from "./telegram-integration";
 import timeEntry from "./time-entry";
+import user from "./user";
+import { getUserAvatarHttpResponse } from "./user/controllers/get-user-avatar-http";
 import {
   authenticateApiRequest,
   resolveAssetBearerOrCookie,
@@ -68,6 +70,7 @@ import {
   normalizeNullableSchemasForOpenApi30,
   normalizeOrganizationAuthOperations,
 } from "./utils/openapi-spec";
+import { resolveUserDisplayImageUrl } from "./utils/user-display-image";
 import { validateWorkspaceAccess } from "./utils/validate-workspace-access";
 import workflowRule from "./workflow-rule";
 import workspace from "./workspace";
@@ -200,7 +203,56 @@ export function createApp() {
     }),
     async (c) => {
       const session = await auth.api.getSession({ headers: c.req.raw.headers });
-      return c.json(session ?? null);
+      if (!session?.user?.id) {
+        return c.json(session ?? null);
+      }
+
+      const [u] = await db
+        .select({
+          email: schema.userTable.email,
+          image: schema.userTable.image,
+          avatarUpdatedAt: schema.userTable.avatarUpdatedAt,
+        })
+        .from(schema.userTable)
+        .where(eq(schema.userTable.id, session.user.id))
+        .limit(1);
+
+      if (u) {
+        session.user.image = resolveUserDisplayImageUrl({
+          id: session.user.id,
+          email: u.email,
+          image: u.image,
+          avatarUpdatedAt: u.avatarUpdatedAt,
+        });
+      }
+
+      return c.json(session);
+    },
+  );
+
+  api.get(
+    "/user/avatar/:userId",
+    describeRoute({
+      operationId: "getUserAvatar",
+      tags: ["User"],
+      description:
+        "Profile image bytes (ETag) or redirect to Gravatar / external URL",
+      security: [],
+      responses: {
+        200: { description: "Image body" },
+        302: { description: "Redirect when no uploaded avatar" },
+        304: { description: "Not modified" },
+        404: { description: "Unknown user" },
+      },
+    }),
+    validator("param", v.object({ userId: v.string() })),
+    async (c) => {
+      const { userId } = c.req.valid("param");
+      return getUserAvatarHttpResponse(
+        userId,
+        c.req.header("If-None-Match"),
+        c.req.header("If-Modified-Since"),
+      );
     },
   );
 
@@ -500,6 +552,7 @@ export function createApp() {
   const workflowRuleApi = api.route("/workflow-rule", workflowRule);
   const invitationApi = api.route("/invitation", invitation);
   const workspaceApi = api.route("/workspace", workspace);
+  const userApi = api.route("/user", user);
 
   app.route(
     "/",
@@ -591,6 +644,7 @@ export function createApp() {
     timeEntryApi,
     workflowRuleApi,
     workspaceApi,
+    userApi,
     oauthApi,
   };
 }
@@ -695,6 +749,7 @@ const {
   timeEntryApi,
   workflowRuleApi,
   workspaceApi,
+  userApi,
   oauthApi,
 } = createdApp;
 
@@ -729,6 +784,7 @@ export type AppType =
   | typeof workflowRuleApi
   | typeof invitationApi
   | typeof workspaceApi
+  | typeof userApi
   | typeof publicProjectApi
   | typeof invitationPublicApi
   | typeof oauthApi;

@@ -1,4 +1,12 @@
-import { CalendarDays, Check, Menu, Plus, SquareKanban } from "lucide-react";
+import {
+  CalendarDays,
+  Check,
+  Menu,
+  Plus,
+  SquareKanban,
+  Tags,
+} from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -12,10 +20,11 @@ import { cn } from "@/lib/cn";
 type MobileProjectNavProps = {
   workspaceId: string;
   projectId: string;
-  activeView: "backlog" | "board" | "gantt";
+  activeView: "backlog" | "board" | "gantt" | "labels";
   onSelectBoard: () => void;
   onSelectBacklog: () => void;
   onSelectGantt: () => void;
+  onSelectLabels: () => void;
   onSelectProject: (projectId: string) => void;
   onAddProject: () => void;
 };
@@ -27,9 +36,11 @@ export default function MobileProjectNav({
   onSelectBoard,
   onSelectBacklog,
   onSelectGantt,
+  onSelectLabels,
   onSelectProject,
   onAddProject,
 }: MobileProjectNavProps) {
+  const { t } = useTranslation();
   const { data: projects = [] } = useGetProjects({ workspaceId });
 
   return (
@@ -51,7 +62,7 @@ export default function MobileProjectNav({
             <p className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
               View
             </p>
-            <div className="grid grid-cols-3 gap-1">
+            <div className="grid grid-cols-2 gap-1">
               <button
                 type="button"
                 onClick={onSelectBacklog}
@@ -62,7 +73,7 @@ export default function MobileProjectNav({
                     : "border-transparent text-muted-foreground hover:bg-accent",
                 )}
               >
-                Backlog
+                {t("tasks:projectNav.backlog")}
               </button>
               <button
                 type="button"
@@ -75,7 +86,7 @@ export default function MobileProjectNav({
                 )}
               >
                 <SquareKanban className="size-3.5" />
-                Board
+                {t("tasks:projectNav.tasks")}
               </button>
               <button
                 type="button"
@@ -88,7 +99,20 @@ export default function MobileProjectNav({
                 )}
               >
                 <CalendarDays className="size-3.5" />
-                Gantt
+                {t("tasks:projectNav.gantt")}
+              </button>
+              <button
+                type="button"
+                onClick={onSelectLabels}
+                className={cn(
+                  "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                  activeView === "labels"
+                    ? "border-border bg-secondary text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <Tags className="size-3.5" />
+                {t("tasks:projectNav.labels")}
               </button>
             </div>
           </div>

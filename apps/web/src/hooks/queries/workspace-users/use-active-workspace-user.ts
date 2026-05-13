@@ -1,27 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMemo } from "react";
 import useAuth from "@/components/providers/auth-provider/hooks/use-auth";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
-import { authClient } from "@/lib/auth-client";
+import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 
 export const useGetActiveWorkspaceUser = () => {
   const { user } = useAuth();
   const { data: workspace } = useActiveWorkspace();
+  const workspaceId = workspace?.id ?? "";
+  const query = useGetActiveWorkspaceUsers(workspaceId);
 
-  return useQuery({
-    queryKey: ["workspace-user", "active", workspace?.id, user?.id],
-    enabled: !!workspace?.id && !!user?.id,
-    queryFn: async () => {
-      const { data, error } = await authClient.organization.listMembers({
-        query: {
-          organizationId: workspace?.id,
-        },
-      });
+  const data = useMemo(
+    () =>
+      query.data?.members?.find((member) => member.userId === user?.id) ?? null,
+    [query.data?.members, user?.id],
+  );
 
-      if (error) {
-        throw new Error(error.message || "Failed to get active workspace user");
-      }
-
-      return data.members.find((member) => member.userId === user?.id) ?? null;
-    },
-  });
+  return {
+    data,
+    isPending: query.isPending,
+    isError: query.isError,
+    error: query.error,
+  };
 };

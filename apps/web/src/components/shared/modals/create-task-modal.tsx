@@ -636,18 +636,20 @@ function CreateTaskModal({
                     key={label.name}
                     color={label.color}
                     variant="outline"
-                    className="flex items-center gap-1 pl-3 cursor-pointer hover:bg-accent/50 transition-colors"
+                    className="flex h-auto min-h-5.5 max-w-full cursor-pointer items-center gap-1.5 whitespace-normal break-words pl-3 transition-colors hover:bg-accent/50"
                     onClick={() => removeLabel(label.name)}
                   >
                     <span
-                      className="inline-block w-2 h-2 mr-1.5 rounded-full"
+                      className="size-2 shrink-0 rounded-full"
                       style={{
                         backgroundColor:
                           labelColors.find((c) => c.value === label.color)
                             ?.color || "var(--color-neutral-400)",
                       }}
                     />
-                    <span className="max-w-20 truncate">{label.name}</span>
+                    <span className="min-w-0 flex-1 break-words">
+                      {label.name}
+                    </span>
                   </Badge>
                 ))}
               </div>
@@ -879,7 +881,10 @@ function CreateTaskModal({
                     <span>{t("common:modals.createTask.labels")}</span>
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="p-0" align="start">
+                <PopoverContent
+                  className="max-w-sm min-w-[12rem] p-0"
+                  align="start"
+                >
                   {labelsStep === "select" && (
                     <div className="w-auto">
                       <div className="flex items-center gap-2 p-2 border-b border-border">
@@ -906,16 +911,16 @@ function CreateTaskModal({
                           <button
                             key={label.id}
                             type="button"
-                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent/50 text-left"
+                            className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-accent/50"
                             onClick={() => toggleLabel(label.name)}
                           >
-                            <div className="flex-shrink-0 w-3 flex justify-center">
+                            <div className="flex w-3 shrink-0 items-center justify-center">
                               {labels.some((l) => l.name === label.name) && (
                                 <Check className="w-3 h-3" />
                               )}
                             </div>
                             <span
-                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              className="size-2 shrink-0 rounded-full"
                               style={{
                                 backgroundColor:
                                   labelColors.find(
@@ -923,7 +928,7 @@ function CreateTaskModal({
                                   )?.color || "var(--color-neutral-400)",
                               }}
                             />
-                            <span className="max-w-20 truncate">
+                            <span className="min-w-0 flex-1 break-words">
                               {label.name}
                             </span>
                           </button>
@@ -935,14 +940,14 @@ function CreateTaskModal({
                         {isCreatingNewLabel && (
                           <button
                             type="button"
-                            className="w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent/50 text-left"
+                            className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-accent/50"
                             onClick={handleCreateNewClick}
                           >
-                            <div className="flex-shrink-0 w-3 flex justify-center">
+                            <div className="flex w-3 shrink-0 items-center justify-center">
                               <Plus className="w-3 h-3" />
                             </div>
                             <span
-                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              className="size-2 shrink-0 rounded-full"
                               style={{
                                 backgroundColor:
                                   labelColors.find(
@@ -950,7 +955,7 @@ function CreateTaskModal({
                                   )?.color || "var(--color-neutral-400)",
                               }}
                             />
-                            <span className="truncate">
+                            <span className="min-w-0 flex-1 break-words">
                               {t("common:modals.createTask.createLabel", {
                                 name: searchValue,
                               })}
@@ -981,7 +986,7 @@ function CreateTaskModal({
                             key={color.value}
                             type="button"
                             className={cn(
-                              "w-full flex items-center gap-2 px-2 py-1.5 text-xs hover:bg-accent/50 text-left",
+                              "flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs hover:bg-accent/50",
                               selectedColor === color.value && "bg-accent/30",
                             )}
                             onClick={() =>
@@ -989,12 +994,14 @@ function CreateTaskModal({
                             }
                           >
                             <span
-                              className="w-2 h-2 rounded-full flex-shrink-0"
+                              className="size-2 shrink-0 rounded-full"
                               style={{ backgroundColor: color.color }}
                             />
-                            <span className="truncate">{color.label}</span>
+                            <span className="min-w-0 flex-1 break-words">
+                              {color.label}
+                            </span>
                             {selectedColor === color.value && (
-                              <Check className="w-3 h-3 ml-auto" />
+                              <Check className="ml-auto size-3 shrink-0" />
                             )}
                           </button>
                         ))}

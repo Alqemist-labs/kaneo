@@ -310,6 +310,13 @@
 			"sectionTitle": "Інформація облікового запису",
 			"sectionSubtitle": "Керуйте вашим профілем та деталями облікового запису.",
 			"profilePicture": "Фото профілю",
+			"profilePictureHint": "If you do not upload a picture, your Gravatar for this email is used.",
+			"uploadAvatar": "Upload image",
+			"removeAvatar": "Remove uploaded picture",
+			"avatarUploadSuccess": "Profile picture updated",
+			"avatarRemoveSuccess": "Picture removed; Gravatar is used again",
+			"avatarUploadError": "Could not upload picture",
+			"avatarRemoveError": "Could not remove picture",
 			"fullName": "Повне ім'я",
 			"fullNamePlaceholder": "Введіть ваше ім'я",
 			"email": "Електронна пошта",
@@ -1032,6 +1039,7 @@
 		"notifications": "Сповіщення",
 		"sidebar": {
 			"overview": "Огляд",
+			"activityFeed": "Активність",
 			"projects": "Проєкти",
 			"members": "Учасники",
 			"invitations": "Запрошення",
@@ -1166,7 +1174,22 @@
 		"setDueDate": "встановив дату завершення на {{date}}",
 		"changedDueDate": "змінив дату завершення з {{from}} на {{to}}",
 		"changedTitle": "змінив назву з «{{from}}» на «{{to}}»",
+		"created": "створив це завдання",
+		"moved": "перемістив завдання з «{{from}}» до «{{to}}»",
+		"commentedOnTask": "залишив коментар",
 		"githubUser": "Користувач GitHub",
+		"workspaceFeed": {
+			"pageTitle": "Активність",
+			"description": "Усі оновлення завдань, коментарі та зміни в проєктах робочого простору, спочатку найновіші.",
+			"recentTitle": "Нещодавнє",
+			"recentSubtitle": "Згруповано за днем, спочатку найсвіжіші оновлення.",
+			"emptyTitle": "Поки немає активності",
+			"emptyDescription": "Тут з’являтимуться нові завдання, коментарі та зміни статусу.",
+			"loadMore": "Завантажити ще",
+			"errorLoading": "Не вдалося завантажити активність.",
+			"openComments": "Open task & comments",
+			"emptyCommentPreview": "(No comment text)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "Переглянути профіль GitHub",
@@ -1271,6 +1294,22 @@
 			"medium": "Середній",
 			"high": "Високий",
 			"urgent": "Терміновий"
+		},
+		"projectNav": {
+			"backlog": "Беклог",
+			"tasks": "Завдання",
+			"gantt": "Гантт",
+			"labels": "Мітки"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Мітки",
+			"noLabelsInWorkspace": "Для цього простору ще не визначено міток.",
+			"labelColumn": "Мітка",
+			"rowTotal": "Усього",
+			"progressColumn": "Прогрес",
+			"summary": "{{count}} завдань у цьому проєкті",
+			"loading": "Завантаження…",
+			"noLabelsMatchFilter": "Жодна мітка не відповідає поточному фільтру. Змініть або скиньте фільтр за мітками."
 		},
 		"boardSearchPlaceholder": "Пошук тікетів...",
 		"view": {

@@ -119,6 +119,11 @@ function RouteComponent() {
             to: "/dashboard/workspace/$workspaceId/project/$projectId/backlog",
             params: { workspaceId, projectId },
           }),
+        [shortcuts.view.labels]: () =>
+          navigate({
+            to: "/dashboard/workspace/$workspaceId/project/$projectId/labels",
+            params: { workspaceId, projectId },
+          }),
       },
     },
   });

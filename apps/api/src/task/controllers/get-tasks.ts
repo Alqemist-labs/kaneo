@@ -19,6 +19,7 @@ import {
   taskTable,
   userTable,
 } from "../../database/schema";
+import { resolveUserDisplayImageUrl } from "../../utils/user-display-image";
 
 type GetTasksOptions = {
   assigneeId?: string;
@@ -134,7 +135,9 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     userId: taskTable.userId,
     assigneeName: userTable.name,
     assigneeId: userTable.id,
+    assigneeEmail: userTable.email,
     assigneeImage: userTable.image,
+    assigneeAvatarUpdatedAt: userTable.avatarUpdatedAt,
     projectId: taskTable.projectId,
   };
 
@@ -150,7 +153,21 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     ? await query.limit(pageSize).offset(offset)
     : await query;
 
-  const taskIds = paginatedTasks.map((task) => task.id);
+  const tasksWithResolvedAvatars = paginatedTasks.map((task) => {
+    const assigneeImage =
+      task.assigneeId && task.assigneeEmail
+        ? resolveUserDisplayImageUrl({
+            id: task.assigneeId,
+            email: task.assigneeEmail,
+            image: task.assigneeImage,
+            avatarUpdatedAt: task.assigneeAvatarUpdatedAt,
+          })
+        : task.assigneeImage;
+    const { assigneeEmail, assigneeAvatarUpdatedAt, ...rest } = task;
+    return { ...rest, assigneeImage };
+  });
+
+  const taskIds = tasksWithResolvedAvatars.map((task) => task.id);
 
   const labelsData =
     taskIds.length > 0
@@ -226,7 +243,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     slug: column.slug,
     name: column.name,
     isFinal: column.isFinal,
-    tasks: paginatedTasks
+    tasks: tasksWithResolvedAvatars
       .filter((task) => task.status === column.slug)
       .map((task) => ({
         ...task,
@@ -235,7 +252,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
       })),
   }));
 
-  const archivedTasks = paginatedTasks
+  const archivedTasks = tasksWithResolvedAvatars
     .filter((task) => task.status === "archived")
     .map((task) => ({
       ...task,
@@ -243,7 +260,7 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
       externalLinks: taskExternalLinksMap.get(task.id) || [],
     }));
 
-  const plannedTasks = paginatedTasks
+  const plannedTasks = tasksWithResolvedAvatars
     .filter((task) => task.status === "planned")
     .map((task) => ({
       ...task,

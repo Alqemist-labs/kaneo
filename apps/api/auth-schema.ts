@@ -9,12 +9,17 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import { bytea } from "./src/database/bytea-column";
+
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").default(false).notNull(),
   image: text("image"),
+  avatarBlob: bytea("avatar_blob"),
+  avatarMimeType: text("avatar_mime_type"),
+  avatarUpdatedAt: timestamp("avatar_updated_at", { mode: "date" }),
   locale: text("locale"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

@@ -310,6 +310,13 @@
 			"sectionTitle": "Kontoinformationen",
 			"sectionSubtitle": "Verwalte dein Profil und deine Kontodetails.",
 			"profilePicture": "Profilbild",
+			"profilePictureHint": "Ohne hochgeladenes Bild wird Ihr Gravatar für diese E-Mail-Adresse verwendet.",
+			"uploadAvatar": "Bild hochladen",
+			"removeAvatar": "Hochgeladenes Bild entfernen",
+			"avatarUploadSuccess": "Profilbild aktualisiert",
+			"avatarRemoveSuccess": "Bild entfernt; Gravatar wird wieder verwendet",
+			"avatarUploadError": "Upload fehlgeschlagen",
+			"avatarRemoveError": "Entfernen fehlgeschlagen",
 			"fullName": "Vollständiger Name",
 			"fullNamePlaceholder": "Gib deinen Namen ein",
 			"email": "E-Mail",
@@ -1034,6 +1041,7 @@
 		"notifications": "Benachrichtigungen",
 		"sidebar": {
 			"overview": "Übersicht",
+			"activityFeed": "Aktivität",
 			"projects": "Projekte",
 			"members": "Mitglieder",
 			"invitations": "Einladungen",
@@ -1169,7 +1177,20 @@
 		"changedTitle": "hat den Titel von \"{{from}}\" zu \"{{to}}\" geändert",
 		"moved": "hat die Aufgabe von \"{{from}}\" nach \"{{to}}\" verschoben",
 		"created": "hat diese Aufgabe erstellt",
+		"commentedOnTask": "hat kommentiert",
 		"githubUser": "GitHub-Benutzer",
+		"workspaceFeed": {
+			"pageTitle": "Aktivität",
+			"description": "Alle Ticket-Updates, Kommentare und Änderungen in den Projekten dieses Workspaces, neueste zuerst.",
+			"recentTitle": "Aktuell",
+			"recentSubtitle": "Nach Tag gruppiert, neueste Updates zuerst.",
+			"emptyTitle": "Noch keine Aktivität",
+			"emptyDescription": "Neue Tickets, Kommentare und Statusänderungen erscheinen hier.",
+			"loadMore": "Mehr laden",
+			"errorLoading": "Aktivität konnte nicht geladen werden.",
+			"openComments": "Ticket & Kommentare öffnen",
+			"emptyCommentPreview": "(Kein Kommentartext)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "GitHub-Profil ansehen",
@@ -1274,6 +1295,22 @@
 			"medium": "Mittel",
 			"high": "Hoch",
 			"urgent": "Dringend"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Tasks",
+			"gantt": "Gantt",
+			"labels": "Labels"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Labels",
+			"noLabelsInWorkspace": "Für diesen Workspace sind noch keine Labels definiert.",
+			"labelColumn": "Label",
+			"rowTotal": "Gesamt",
+			"progressColumn": "Fortschritt",
+			"summary": "{{count}} Aufgaben in diesem Projekt",
+			"loading": "Wird geladen…",
+			"noLabelsMatchFilter": "Kein Label entspricht dem aktuellen Filter. Passen Sie den Label-Filter an oder setzen Sie ihn zurück."
 		},
 		"boardSearchPlaceholder": "Tickets suchen...",
 		"view": {

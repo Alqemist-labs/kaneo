@@ -1214,6 +1214,27 @@
 						"profilePicture": {
 							"type": "string"
 						},
+						"profilePictureHint": {
+							"type": "string"
+						},
+						"uploadAvatar": {
+							"type": "string"
+						},
+						"removeAvatar": {
+							"type": "string"
+						},
+						"avatarUploadSuccess": {
+							"type": "string"
+						},
+						"avatarRemoveSuccess": {
+							"type": "string"
+						},
+						"avatarUploadError": {
+							"type": "string"
+						},
+						"avatarRemoveError": {
+							"type": "string"
+						},
 						"fullName": {
 							"type": "string"
 						},
@@ -1256,6 +1277,13 @@
 						"sectionTitle",
 						"sectionSubtitle",
 						"profilePicture",
+						"profilePictureHint",
+						"uploadAvatar",
+						"removeAvatar",
+						"avatarUploadSuccess",
+						"avatarRemoveSuccess",
+						"avatarUploadError",
+						"avatarRemoveError",
 						"fullName",
 						"fullNamePlaceholder",
 						"email",
@@ -3624,6 +3652,9 @@
 						"overview": {
 							"type": "string"
 						},
+						"activityFeed": {
+							"type": "string"
+						},
 						"projects": {
 							"type": "string"
 						},
@@ -3637,7 +3668,14 @@
 							"type": "string"
 						}
 					},
-					"required": ["overview", "projects", "members", "invitations", "more"]
+					"required": [
+						"overview",
+						"activityFeed",
+						"projects",
+						"members",
+						"invitations",
+						"more"
+					]
 				},
 				"projectList": {
 					"type": "object",
@@ -4132,8 +4170,59 @@
 				"changedTitle": {
 					"type": "string"
 				},
+				"commentedOnTask": {
+					"type": "string"
+				},
 				"githubUser": {
 					"type": "string"
+				},
+				"workspaceFeed": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"pageTitle": {
+							"type": "string"
+						},
+						"description": {
+							"type": "string"
+						},
+						"recentTitle": {
+							"type": "string"
+						},
+						"recentSubtitle": {
+							"type": "string"
+						},
+						"emptyTitle": {
+							"type": "string"
+						},
+						"emptyDescription": {
+							"type": "string"
+						},
+						"loadMore": {
+							"type": "string"
+						},
+						"errorLoading": {
+							"type": "string"
+						},
+						"openComments": {
+							"type": "string"
+						},
+						"emptyCommentPreview": {
+							"type": "string"
+						}
+					},
+					"required": [
+						"pageTitle",
+						"description",
+						"recentTitle",
+						"recentSubtitle",
+						"emptyTitle",
+						"emptyDescription",
+						"loadMore",
+						"errorLoading",
+						"openComments",
+						"emptyCommentPreview"
+					]
 				},
 				"comment": {
 					"type": "object",
@@ -4492,7 +4581,9 @@
 				"setDueDate",
 				"changedDueDate",
 				"changedTitle",
+				"commentedOnTask",
 				"githubUser",
+				"workspaceFeed",
 				"comment"
 			]
 		},
@@ -4570,6 +4661,65 @@
 				},
 				"boardSearchPlaceholder": {
 					"type": "string"
+				},
+				"projectNav": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"backlog": {
+							"type": "string"
+						},
+						"tasks": {
+							"type": "string"
+						},
+						"gantt": {
+							"type": "string"
+						},
+						"labels": {
+							"type": "string"
+						}
+					},
+					"required": ["backlog", "tasks", "gantt", "labels"]
+				},
+				"labelsBreakdown": {
+					"type": "object",
+					"additionalProperties": false,
+					"properties": {
+						"pageTitle": {
+							"type": "string"
+						},
+						"noLabelsInWorkspace": {
+							"type": "string"
+						},
+						"labelColumn": {
+							"type": "string"
+						},
+						"rowTotal": {
+							"type": "string"
+						},
+						"progressColumn": {
+							"type": "string"
+						},
+						"summary": {
+							"type": "string"
+						},
+						"loading": {
+							"type": "string"
+						},
+						"noLabelsMatchFilter": {
+							"type": "string"
+						}
+					},
+					"required": [
+						"pageTitle",
+						"noLabelsInWorkspace",
+						"noLabelsMatchFilter",
+						"labelColumn",
+						"rowTotal",
+						"progressColumn",
+						"summary",
+						"loading"
+					]
 				},
 				"view": {
 					"type": "object",
@@ -5956,6 +6106,8 @@
 				"status",
 				"priority",
 				"boardSearchPlaceholder",
+				"projectNav",
+				"labelsBreakdown",
 				"view",
 				"common",
 				"detail",

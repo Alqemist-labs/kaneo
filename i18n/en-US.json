@@ -310,6 +310,13 @@
 			"sectionTitle": "Account Information",
 			"sectionSubtitle": "Manage your profile and account details.",
 			"profilePicture": "Profile picture",
+			"profilePictureHint": "If you do not upload a picture, your Gravatar for this email is used.",
+			"uploadAvatar": "Upload image",
+			"removeAvatar": "Remove uploaded picture",
+			"avatarUploadSuccess": "Profile picture updated",
+			"avatarRemoveSuccess": "Picture removed; Gravatar is used again",
+			"avatarUploadError": "Could not upload picture",
+			"avatarRemoveError": "Could not remove picture",
 			"fullName": "Full name",
 			"fullNamePlaceholder": "Enter your name",
 			"email": "Email",
@@ -1034,6 +1041,7 @@
 		"notifications": "Notifications",
 		"sidebar": {
 			"overview": "Overview",
+			"activityFeed": "Activity",
 			"projects": "Projects",
 			"members": "Members",
 			"invitations": "Invitations",
@@ -1169,7 +1177,20 @@
 		"changedTitle": "changed title from \"{{from}}\" to \"{{to}}\"",
 		"moved": "moved task from \"{{from}}\" to \"{{to}}\"",
 		"created": "created this task",
+		"commentedOnTask": "commented",
 		"githubUser": "GitHub User",
+		"workspaceFeed": {
+			"pageTitle": "Activity",
+			"description": "All ticket updates, comments, and changes across your workspace projects, newest first.",
+			"recentTitle": "Recent",
+			"recentSubtitle": "Grouped by day, showing the most recent updates first.",
+			"emptyTitle": "No activity yet",
+			"emptyDescription": "When people create tickets, comment, or change status, it will show up here.",
+			"loadMore": "Load more",
+			"errorLoading": "Could not load activity.",
+			"openComments": "Open task & comments",
+			"emptyCommentPreview": "(No comment text)"
+		},
 		"comment": {
 			"github": "GitHub",
 			"viewGithubProfile": "View GitHub Profile",
@@ -1274,6 +1295,22 @@
 			"medium": "Medium",
 			"high": "High",
 			"urgent": "Urgent"
+		},
+		"projectNav": {
+			"backlog": "Backlog",
+			"tasks": "Tasks",
+			"gantt": "Gantt",
+			"labels": "Labels"
+		},
+		"labelsBreakdown": {
+			"pageTitle": "Labels",
+			"noLabelsInWorkspace": "No labels defined for this workspace yet.",
+			"labelColumn": "Label",
+			"rowTotal": "Total",
+			"progressColumn": "Progress",
+			"summary": "{{count}} tasks in this project",
+			"loading": "Loading…",
+			"noLabelsMatchFilter": "No labels match the current filter. Change or clear the label filter."
 		},
 		"boardSearchPlaceholder": "Search tickets...",
 		"view": {

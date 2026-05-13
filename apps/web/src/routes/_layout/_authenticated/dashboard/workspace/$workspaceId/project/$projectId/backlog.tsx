@@ -103,6 +103,12 @@ function RouteComponent() {
             params: { workspaceId, projectId },
           });
         },
+        [shortcuts.view.labels]: () => {
+          navigate({
+            to: "/dashboard/workspace/$workspaceId/project/$projectId/labels",
+            params: { workspaceId, projectId },
+          });
+        },
         [shortcuts.view.backlog]: () => {},
       },
     },
@@ -654,10 +660,10 @@ function RouteComponent() {
                             key={label.id}
                             checked={isLabelGroupSelected(label)}
                             onCheckedChange={() => toggleLabelGroup(label)}
-                            className="h-8 rounded-md text-sm"
+                            className="min-h-8 h-auto items-center gap-2 rounded-md py-1.5 text-sm"
                           >
                             <span
-                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              className="size-3 shrink-0 rounded-full"
                               style={{
                                 backgroundColor:
                                   labelColors.find(
@@ -665,7 +671,7 @@ function RouteComponent() {
                                   )?.color || "var(--color-neutral-400)",
                               }}
                             />
-                            <span className="max-w-20 truncate">
+                            <span className="min-w-0 flex-1 break-words">
                               {label.name}
                             </span>
                           </DropdownMenuCheckboxItem>

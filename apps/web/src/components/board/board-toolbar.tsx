@@ -58,6 +58,10 @@ type BoardToolbarProps = {
   setViewMode: (mode: "board" | "list") => void;
   sort: SortConfig;
   onSortChange: (sort: SortConfig) => void;
+  /** When false, hides sort control (e.g. labels breakdown page). Default true. */
+  showSort?: boolean;
+  /** When false, hides board/list toggle. Default true. */
+  showDisplayModeToggle?: boolean;
 };
 
 function CheckSlot({ checked }: { checked: boolean }) {
@@ -142,6 +146,8 @@ export default function BoardToolbar({
   setViewMode,
   sort,
   onSortChange,
+  showSort = true,
+  showDisplayModeToggle = true,
 }: BoardToolbarProps) {
   const { t } = useTranslation();
   const selectedStatusIds = filters.status ?? [];
@@ -470,7 +476,7 @@ export default function BoardToolbar({
                   <DropdownMenuSubTrigger className="h-8 rounded-md text-sm">
                     {t("tasks:properties.labels")}
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="w-64">
+                  <DropdownMenuSubContent className="min-w-[14rem] max-w-sm">
                     <DropdownMenuItem
                       onClick={clearLabelFilters}
                       className="h-8 rounded-md text-sm"
@@ -486,18 +492,18 @@ export default function BoardToolbar({
                         <DropdownMenuItem
                           key={label.id}
                           onClick={() => toggleLabelGroup(label)}
-                          className="h-8 rounded-md text-sm"
+                          className="min-h-8 h-auto items-center gap-2 rounded-md py-1.5 text-sm"
                         >
                           <CheckSlot checked={isLabelGroupSelected(label)} />
                           <span
-                            className="h-2.5 w-2.5 shrink-0 rounded-full"
+                            className="size-2.5 shrink-0 translate-y-px self-center rounded-full"
                             style={{
                               backgroundColor:
                                 labelColors.find((c) => c.value === label.color)
                                   ?.color || "var(--color-neutral-400)",
                             }}
                           />
-                          <span className="max-w-20 truncate">
+                          <span className="min-w-0 flex-1 break-words leading-snug">
                             {label.name}
                           </span>
                         </DropdownMenuItem>
@@ -527,7 +533,9 @@ export default function BoardToolbar({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <SortControl sort={sort} onSortChange={onSortChange} />
+            {showSort ? (
+              <SortControl sort={sort} onSortChange={onSortChange} />
+            ) : null}
 
             {selectedStatusIds.length > 0 && (
               <ActiveFilterChip
@@ -642,32 +650,34 @@ export default function BoardToolbar({
             )}
           </div>
 
-          <div className="inline-flex items-center gap-1">
-            <button
-              type="button"
-              className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors ${
-                viewMode === "board"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-              }`}
-              onClick={() => setViewMode("board")}
-            >
-              <PanelsTopLeft className="h-3 w-3" />
-              {t("tasks:view.board")}
-            </button>
-            <button
-              type="button"
-              className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors ${
-                viewMode === "list"
-                  ? "bg-accent text-foreground"
-                  : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
-              }`}
-              onClick={() => setViewMode("list")}
-            >
-              <Rows3 className="h-3 w-3" />
-              {t("tasks:view.list")}
-            </button>
-          </div>
+          {showDisplayModeToggle ? (
+            <div className="inline-flex items-center gap-1">
+              <button
+                type="button"
+                className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors ${
+                  viewMode === "board"
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                }`}
+                onClick={() => setViewMode("board")}
+              >
+                <PanelsTopLeft className="h-3 w-3" />
+                {t("tasks:view.board")}
+              </button>
+              <button
+                type="button"
+                className={`inline-flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium transition-colors ${
+                  viewMode === "list"
+                    ? "bg-accent text-foreground"
+                    : "text-muted-foreground hover:bg-accent/60 hover:text-foreground"
+                }`}
+                onClick={() => setViewMode("list")}
+              >
+                <Rows3 className="h-3 w-3" />
+                {t("tasks:view.list")}
+              </button>
+            </div>
+          ) : null}
         </div>
       </div>
     </div>
