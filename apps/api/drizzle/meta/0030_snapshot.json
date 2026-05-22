@@ -1,6 +1,6 @@
 {
-	"id": "f03b3725-0c2f-4b56-835f-2bf9aba84884",
-	"prevId": "b7c8d9e0-f1a2-4b3c-9d0e-abcdef012345",
+	"id": "0030_snapshot",
+	"prevId": "f03b3725-0c2f-4b56-835f-2bf9aba84884",
 	"version": "7",
 	"dialect": "postgresql",
 	"tables": {
@@ -2686,6 +2686,24 @@
 					"primaryKey": false,
 					"notNull": false,
 					"default": false
+				},
+				"avatar_blob": {
+					"name": "avatar_blob",
+					"type": "bytea",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"avatar_mime_type": {
+					"name": "avatar_mime_type",
+					"type": "text",
+					"primaryKey": false,
+					"notNull": false
+				},
+				"avatar_updated_at": {
+					"name": "avatar_updated_at",
+					"type": "timestamp",
+					"primaryKey": false,
+					"notNull": false
 				}
 			},
 			"indexes": {},
