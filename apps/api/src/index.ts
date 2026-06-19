@@ -60,6 +60,7 @@ import {
 import { getInvitationDetails } from "./utils/check-registration-allowed";
 import { migrateApiKeyReferenceId } from "./utils/migrate-apikey-reference-id";
 import { migrateNotificationPreferencesSchema } from "./utils/migrate-notification-preferences-schema";
+import { migrateRbacAndAvatarSchema } from "./utils/migrate-rbac-and-avatar-schema";
 import { migrateSessionColumn } from "./utils/migrate-session-column";
 import { migrateWorkspaceUserEmail } from "./utils/migrate-workspace-user-email";
 import {
@@ -703,6 +704,8 @@ export async function runStartupTasks() {
         migrationsFolder: `${currentDir}/../drizzle`,
       });
       console.log("✅ Database migrated successfully!");
+
+      await migrateRbacAndAvatarSchema();
     },
   });
 
