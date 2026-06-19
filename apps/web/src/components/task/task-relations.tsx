@@ -45,6 +45,7 @@ import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
 import useGetTaskRelations from "@/hooks/queries/task-relation/use-get-task-relations";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
+import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
 import { toast } from "@/lib/toast";
 import type Task from "@/types/task";
@@ -93,6 +94,8 @@ export default function TaskRelations({
   );
   const createRelation = useCreateTaskRelation();
   const deleteRelation = useDeleteTaskRelation(taskId);
+  const { canManageTasks } = useWorkspacePermission();
+  const canEdit = canManageTasks();
 
   useEffect(() => {
     if (!commandOpen) {
@@ -167,6 +170,20 @@ export default function TaskRelations({
       );
     }
     return new Set<string>();
+  }, [projectData]);
+
+  const columnIconBySlug = useMemo(() => {
+    const icons = new Map<string, string | null | undefined>();
+    if (!projectData) return icons;
+    if ("columns" in projectData && Array.isArray(projectData.columns)) {
+      for (const col of projectData.columns as Array<{
+        id: string;
+        icon?: string | null;
+      }>) {
+        icons.set(col.id, col.icon);
+      }
+    }
+    return icons;
   }, [projectData]);
 
   const filteredTasks = allTasks.filter(
@@ -260,14 +277,16 @@ export default function TaskRelations({
               </span>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="xs"
-            className="text-muted-foreground"
-            onClick={() => setCommandOpen(true)}
-          >
-            <Plus className="size-3.5" />
-          </Button>
+          {canEdit && (
+            <Button
+              variant="ghost"
+              size="xs"
+              className="text-muted-foreground"
+              onClick={() => setCommandOpen(true)}
+            >
+              <Plus className="size-3.5" />
+            </Button>
+          )}
         </div>
 
         <CollapsibleContent>
@@ -296,6 +315,7 @@ export default function TaskRelations({
                               {getColumnIcon(
                                 item.task.status,
                                 finalStatusSlugs.has(item.task.status),
+                                columnIconBySlug.get(item.task.status),
                               )}
                             </button>
                           </SubtaskStatusPopover>
@@ -353,13 +373,17 @@ export default function TaskRelations({
                         >
                           <span>{t("tasks:relations.openTask")}</span>
                         </ContextMenuItem>
-                        <ContextMenuSeparator />
-                        <ContextMenuItem
-                          className="text-destructive"
-                          onClick={() => handleRemoveRelation(item.id)}
-                        >
-                          <span>{t("tasks:relations.removeRelation")}</span>
-                        </ContextMenuItem>
+                        {canEdit && (
+                          <>
+                            <ContextMenuSeparator />
+                            <ContextMenuItem
+                              className="text-destructive"
+                              onClick={() => handleRemoveRelation(item.id)}
+                            >
+                              <span>{t("tasks:relations.removeRelation")}</span>
+                            </ContextMenuItem>
+                          </>
+                        )}
                       </ContextMenuContent>
                     </ContextMenu>
                   );
@@ -406,7 +430,11 @@ export default function TaskRelations({
                             onClick={() => handleLinkTask(item.id)}
                             className="flex items-center gap-3 py-2"
                           >
-                            {getColumnIcon(item.status, false)}
+                            {getColumnIcon(
+                              item.status,
+                              false,
+                              columnIconBySlug.get(item.status),
+                            )}
                             <span className="text-xs text-muted-foreground shrink-0 font-mono">
                               {project?.slug}-{item.number}
                             </span>

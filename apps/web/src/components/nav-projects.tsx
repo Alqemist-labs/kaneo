@@ -37,6 +37,7 @@ import icons from "@/constants/project-icons";
 import useDeleteProject from "@/hooks/mutations/project/use-delete-project";
 import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
+import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 import type { ProjectWithTasks } from "@/types/project";
@@ -61,6 +62,9 @@ export function NavProjects() {
   });
   const queryClient = useQueryClient();
   const { mutateAsync: deleteProject } = useDeleteProject();
+  const { canCreateProjects, canDeleteProjects } = useWorkspacePermission();
+  const canCreate = canCreateProjects();
+  const canDeleteProject = canDeleteProjects();
   const navigate = useNavigate();
   const { workspaceId: currentWorkspaceId, projectId: currentProjectId } =
     useParams({
@@ -223,45 +227,51 @@ export function NavProjects() {
                               {t("navigation:projectList.projectSettings")}
                             </span>
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="h-7 items-start text-destructive cursor-pointer text-sm"
-                            onClick={() => {
-                              setProjectToDeleteID(project.id);
-                              setIsDeleteProjectModalOpen(true);
-                            }}
-                          >
-                            <IconTrash
-                              aria-hidden
-                              size={16}
-                              stroke={1.5}
-                              className="text-destructive"
-                            />
-                            <span>
-                              {t("navigation:projectList.deleteProject")}
-                            </span>
-                          </DropdownMenuItem>
+                          {canDeleteProject && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="h-7 items-start text-destructive cursor-pointer text-sm"
+                                onClick={() => {
+                                  setProjectToDeleteID(project.id);
+                                  setIsDeleteProjectModalOpen(true);
+                                }}
+                              >
+                                <IconTrash
+                                  aria-hidden
+                                  size={16}
+                                  stroke={1.5}
+                                  className="text-destructive"
+                                />
+                                <span>
+                                  {t("navigation:projectList.deleteProject")}
+                                </span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </SidebarMenuItem>
                   );
                 })}
 
-                <SidebarMenuItem className="mt-1">
-                  <SidebarMenuButton
-                    size="default"
-                    className="h-8 gap-2.5 ps-2.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
-                    onClick={() => setIsCreateProjectModalOpen(true)}
-                  >
-                    <IconPlus
-                      aria-hidden
-                      size={16}
-                      stroke={1.5}
-                      className="shrink-0 text-sidebar-foreground/55"
-                    />
-                    <span>{t("navigation:projectList.addProject")}</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                {canCreate && (
+                  <SidebarMenuItem className="mt-1">
+                    <SidebarMenuButton
+                      size="default"
+                      className="h-8 gap-2.5 ps-2.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
+                      onClick={() => setIsCreateProjectModalOpen(true)}
+                    >
+                      <IconPlus
+                        aria-hidden
+                        size={16}
+                        stroke={1.5}
+                        className="shrink-0 text-sidebar-foreground/55"
+                      />
+                      <span>{t("navigation:projectList.addProject")}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </CollapsiblePanel>

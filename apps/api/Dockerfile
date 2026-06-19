@@ -13,6 +13,7 @@ COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/typescript-config/package.json ./packages/typescript-config/
 COPY packages/email/package.json ./packages/email/
 COPY packages/libs/package.json ./packages/libs/
+COPY packages/permissions/package.json ./packages/permissions/
 COPY apps/api/package.json ./apps/api/
 
 # Install dependencies
@@ -22,10 +23,15 @@ RUN pnpm install --frozen-lockfile
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/email ./packages/email
 COPY packages/libs ./packages/libs
+COPY packages/permissions ./packages/permissions
 COPY apps/api ./apps/api
 
 # Build email package first
 WORKDIR /app/packages/email
+RUN pnpm run build
+
+# Build permissions package
+WORKDIR /app/packages/permissions
 RUN pnpm run build
 
 # Fix TypeScript config and build API
@@ -50,6 +56,7 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/packages/typescript-config/package.json ./packages/typescript-config/
 COPY --from=builder /app/packages/libs/package.json ./packages/libs/
 COPY --from=builder /app/packages/email/package.json ./packages/email/
+COPY --from=builder /app/packages/permissions/package.json ./packages/permissions/
 
 # Install production dependencies only
 RUN sed -i 's/"prepare": "husky"/"prepare": ""/g' package.json && \
@@ -61,6 +68,7 @@ RUN sed -i 's/"prepare": "husky"/"prepare": ""/g' package.json && \
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/drizzle ./apps/api/drizzle
 COPY --from=builder /app/packages/email ./packages/email
+COPY --from=builder /app/packages/permissions ./packages/permissions
 
 # Set environment variables
 ENV NODE_ENV=production

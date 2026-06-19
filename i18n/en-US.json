@@ -150,7 +150,11 @@
 			"oidcError": "Failed to sign in with OIDC",
 			"googleError": "Failed to sign in with Google",
 			"githubError": "Failed to sign in with GitHub",
-			"discordError": "Failed to sign in with Discord"
+			"discordError": "Failed to sign in with Discord",
+			"errors": {
+				"oauth_code_verification_failed": "OAuth verification failed. Please try again.",
+				"registration_is_currently_disabled_you_need_a_valid_invitation_to_create_an_account_": "Registration is currently disabled. You need a valid invitation to create an account."
+			}
 		},
 		"providers": {
 			"google": "Google",
@@ -646,9 +650,12 @@
 			"toastFinalOn": "Column marked as final",
 			"toastFinalOff": "Column unmarked as final",
 			"toastUpdateError": "Failed to update column",
+			"toastIconUpdated": "Column icon updated",
 			"toastDeleted": "Column deleted",
 			"toastDeleteError": "Failed to delete column",
 			"loading": "Loading columns...",
+			"pickIconTitle": "Pick column icon",
+			"searchIconsPlaceholder": "Search icons...",
 			"doneColumnTooltip": "Treat this as a done column",
 			"doneColumn": "Done column",
 			"markDoneAria": "Mark {{name}} as done column",
@@ -1718,6 +1725,7 @@
 			"status": "Status",
 			"emptyTitle": "No projects yet",
 			"emptyDescription": "Get started by creating your first project.",
+			"emptyDescriptionReadOnly": "There are no projects in this workspace yet. Ask an admin to create one.",
 			"projectStatus": {
 				"notStarted": "Not started",
 				"complete": "Complete",
@@ -1763,7 +1771,8 @@
 		"roles": {
 			"owner": "Owner",
 			"admin": "Admin",
-			"member": "Member"
+			"member": "Member",
+			"viewer": "Viewer"
 		},
 		"members": {
 			"pageTitle": "Members",
@@ -1798,7 +1807,9 @@
 			"removeSuccess": "Team member removed successfully",
 			"removeError": "Failed to remove team member",
 			"cancelInviteSuccess": "Invitation cancelled successfully",
-			"cancelInviteError": "Failed to cancel invitation"
+			"cancelInviteError": "Failed to cancel invitation",
+			"roleUpdateSuccess": "Role updated",
+			"roleUpdateError": "Failed to update role"
 		}
 	},
 	"publicProject": {
