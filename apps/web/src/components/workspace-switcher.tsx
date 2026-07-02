@@ -2,7 +2,7 @@ import { IconBuildingSkyscraper, IconChevronDown } from "@tabler/icons-react";
 import { useNavigate } from "@tanstack/react-router";
 import * as React from "react";
 import { useTranslation } from "react-i18next";
-
+import NotificationDropdown from "@/components/notification/notification-dropdown";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,7 @@ import {
   getModifierKeyText,
   useRegisterShortcuts,
 } from "@/hooks/use-keyboard-shortcuts";
+import { useUserWebSocket } from "@/hooks/use-user-websocket";
 import { authClient } from "@/lib/auth-client";
 import type { Workspace } from "@/types/workspace";
 import CreateWorkspaceModal from "./shared/modals/create-workspace-modal";
@@ -33,6 +34,9 @@ import CreateWorkspaceModal from "./shared/modals/create-workspace-modal";
 export function WorkspaceSwitcher() {
   const { t } = useTranslation();
   const { data: workspace } = useActiveWorkspace();
+
+  // User-scoped WebSocket for real-time events (e.g. NOTIFICATION_CREATED)
+  useUserWebSocket();
   const { data: workspaces } = useGetWorkspaces();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = React.useState(false);
@@ -190,8 +194,11 @@ export function WorkspaceSwitcher() {
           </SidebarMenuItem>
         </SidebarMenu>
 
-        <div className="h-7 w-7 shrink-0">
-          <UserAvatar />
+        <div className="flex items-center gap-1">
+          <NotificationDropdown />
+          <div className="h-7 w-7 shrink-0">
+            <UserAvatar />
+          </div>
         </div>
       </div>
 

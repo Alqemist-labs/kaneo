@@ -2,7 +2,7 @@
 
 This repository is Alqemist's fork of [Kaneo](https://github.com/usekaneo/kaneo), an open source project management tool released under the MIT license.
 
-It builds on top of Kaneo and adds changes tailored to our internal usage. Some of the changes currently present in this working tree have not been committed yet.
+It builds on top of Kaneo and adds changes tailored to our internal usage.
 
 ## Added Features
 
@@ -33,7 +33,7 @@ The image is built from `Dockerfile.kaneo` and published automatically on pushes
 
 ## Original README
 
-The previous upstream README is preserved here: [README.upstream.md](README.upstream.md).
+The upstream Kaneo README (v2.9.0) is preserved here: [README.upstream.md](README.upstream.md).
 
 ## License
 
