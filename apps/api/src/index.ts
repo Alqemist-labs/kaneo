@@ -59,6 +59,7 @@ import {
 } from "./utils/authenticate-api-request";
 import { getInvitationDetails } from "./utils/check-registration-allowed";
 import { migrateApiKeyReferenceId } from "./utils/migrate-apikey-reference-id";
+import { migrateFkSupportingSchema } from "./utils/migrate-fk-supporting-schema";
 import { migrateNotificationPreferencesSchema } from "./utils/migrate-notification-preferences-schema";
 import { migrateRbacAndAvatarSchema } from "./utils/migrate-rbac-and-avatar-schema";
 import { migrateSessionColumn } from "./utils/migrate-session-column";
@@ -783,6 +784,7 @@ export async function runStartupTasks() {
       console.log("✅ Database migrated successfully!");
 
       await migrateRbacAndAvatarSchema();
+      await migrateFkSupportingSchema();
     },
   });
 
