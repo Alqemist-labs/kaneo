@@ -65,8 +65,9 @@ export default function TaskSubtasks({
   const { mutateAsync: deleteTask } = useDeleteTask();
   const { mutateAsync: updateTaskStatus } = useUpdateTaskStatus();
   const { data: columns = [] } = useGetColumns(projectId);
-  const { canManageTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { canCreateTasks, canUpdateTasks } = useWorkspacePermission();
+  const canEdit = canUpdateTasks();
+  const canCreate = canCreateTasks();
 
   // Map the completion checkbox to the project's actual column slugs (the API
   // validates status against columns). A subtask counts as completed when its
@@ -330,7 +331,7 @@ export default function TaskSubtasks({
               </span>
             )}
           </div>
-          {canEdit && (
+          {canCreate && (
             <Button
               variant="ghost"
               size="xs"
