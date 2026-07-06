@@ -353,7 +353,7 @@ describe("API integration: workspace RBAC enforcement", () => {
   });
 
   describe("resource coverage: task:assign", () => {
-    it("allows a member to assign a task", async () => {
+    it("blocks a member from assigning a task (assign is admin-tier)", async () => {
       const member = await createWorkspaceMember({ role: "member" });
       const { project, columns } = await createProjectFixture({
         workspaceId: member.workspace.id,
@@ -368,7 +368,7 @@ describe("API integration: workspace RBAC enforcement", () => {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ userId: member.user.id }),
       });
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(403);
     });
 
     it("allows an admin to assign a task", async () => {

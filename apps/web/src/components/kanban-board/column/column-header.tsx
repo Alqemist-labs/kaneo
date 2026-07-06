@@ -19,7 +19,7 @@ export function ColumnHeader({ column }: ColumnHeaderProps) {
   const { t } = useTranslation();
   const { project, setProject } = useProjectStore();
   const { mutate: updateTask } = useUpdateTask();
-  const { canUpdateTasks } = useWorkspacePermission();
+  const { canUpdateTasks, canCreateTasks } = useWorkspacePermission();
   const canTask = canUpdateTasks();
   const canCreate = canCreateTasks();
 
