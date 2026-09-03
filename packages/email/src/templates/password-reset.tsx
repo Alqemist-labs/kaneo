@@ -13,7 +13,7 @@ export type PasswordResetEmailProps = {
 
 const messages = {
   en: {
-    preview: "Reset your Kaneo password",
+    preview: "Reset your Alqemist Tickets password",
     title: "Reset your password",
     subtitleWithName: (name: string) =>
       `Hi ${name}, use the button below to set a new password.`,
@@ -21,10 +21,10 @@ const messages = {
     cta: "Reset password",
     expiry: "This reset link expires in 1 hour.",
     ignore: "If you didn't request this, no changes will be made.",
-    footer: "Kaneo security email",
+    footer: "Alqemist Tickets security email",
   },
   de: {
-    preview: "Setze dein Kaneo-Passwort zurueck",
+    preview: "Setze dein Alqemist Tickets-Passwort zurueck",
     title: "Passwort zuruecksetzen",
     subtitleWithName: (name: string) =>
       `Hallo ${name}, verwende die Schaltflaeche unten, um ein neues Passwort festzulegen.`,
@@ -34,10 +34,10 @@ const messages = {
     expiry: "Dieser Link laeuft in 1 Stunde ab.",
     ignore:
       "Wenn du das nicht angefordert hast, werden keine Aenderungen vorgenommen.",
-    footer: "Kaneo Sicherheits-E-Mail",
+    footer: "Alqemist Tickets Sicherheits-E-Mail",
   },
   vi: {
-    preview: "Đặt lại mật khẩu Kaneo của bạn",
+    preview: "Đặt lại mật khẩu Alqemist Tickets của bạn",
     title: "Đặt lại mật khẩu",
     subtitleWithName: (name: string) =>
       `Chào ${name}, hãy dùng nút bên dưới để đặt mật khẩu mới.`,
@@ -46,10 +46,10 @@ const messages = {
     expiry: "Liên kết đặt lại này sẽ hết hạn sau 1 giờ.",
     ignore:
       "Nếu bạn không yêu cầu điều này, sẽ không có thay đổi nào được thực hiện.",
-    footer: "Email bảo mật Kaneo",
+    footer: "Email bảo mật Alqemist Tickets",
   },
   ja: {
-    preview: "Kaneo のパスワードをリセット",
+    preview: "Alqemist Tickets のパスワードをリセット",
     title: "パスワードのリセット",
     subtitleWithName: (name: string) =>
       `${name} さん、下のボタンから新しいパスワードを設定してください。`,
@@ -57,7 +57,7 @@ const messages = {
     cta: "パスワードをリセット",
     expiry: "このリンクの有効期限は1時間です。",
     ignore: "心当たりがない場合は、変更は行われません。",
-    footer: "Kaneo セキュリティメール",
+    footer: "Alqemist Tickets セキュリティメール",
   },
 } as const;
 

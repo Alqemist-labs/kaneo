@@ -11,7 +11,7 @@ describe("MagicLinkEmail", () => {
         locale: "ja-JP",
       }),
     );
-    expect(html).toContain("Kaneo にサインイン");
-    expect(html).toContain("Kaneo セキュリティメール");
+    expect(html).toContain("Alqemist Tickets にサインイン");
+    expect(html).toContain("Alqemist Tickets セキュリティメール");
   });
 });
