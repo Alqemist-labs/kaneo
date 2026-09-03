@@ -3,10 +3,11 @@ import {
   useNavigate,
   useSearch,
 } from "@tanstack/react-router";
-import { Github, KeyRound } from "lucide-react";
+import { KeyRound, UserCheck } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { z } from "zod/v4";
+import { GithubIcon } from "@/components/icons/github-icon";
 import PageTitle from "@/components/page-title";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,11 @@ import { OtpSignInForm } from "../../components/auth/otp-sign-in-form";
 import { SignInForm } from "../../components/auth/sign-in-form";
 import { SignInFormSkeleton } from "../../components/auth/sign-in-form-skeleton";
 import { AuthToggle } from "../../components/auth/toggle";
+import { Turnstile } from "../../components/auth/turnstile";
+
+const TURNSTILE_SITE_KEY = import.meta.env.VITE_TURNSTILE_SITE_KEY as
+  | string
+  | undefined;
 
 const signInSearchSchema = z.object({
   invitationId: z.string().optional(),
@@ -41,6 +47,8 @@ function SignIn() {
   const [isGithubLoading, setIsGithubLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [isDiscordLoading, setIsDiscordLoading] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [autoLoginFailed, setAutoLoginFailed] = useState(false);
   const lastLoginMethod = authClient.getLastUsedLoginMethod();
   const { data: config, isLoading: isConfigLoading } = useGetConfig();
@@ -73,6 +81,15 @@ function SignIn() {
 
   const invitationId = search.invitationId;
   const defaultEmail = search.email;
+  const captchaConfigured = Boolean(TURNSTILE_SITE_KEY);
+  const captchaPending = captchaConfigured && !turnstileToken;
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    setTurnstileToken(token);
+  }, []);
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken(null);
+  }, []);
 
   const getSafeRedirectPath = useCallback(() => {
     const redirectPath = search.redirect;
@@ -186,6 +203,25 @@ function SignIn() {
     }
   };
 
+  const handleGuestAccess = async () => {
+    if (captchaPending) return;
+    setIsGuestLoading(true);
+    try {
+      const result = await authClient.signIn.anonymous();
+      if (result.error) {
+        throw new Error(result.error.message);
+      }
+      toast.success(t("auth:signIn.guestSuccess"));
+      handleSignInSuccess();
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : t("auth:signIn.guestError"),
+      );
+    } finally {
+      setIsGuestLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (search.error) {
       setAutoLoginFailed(true);
@@ -264,7 +300,8 @@ function SignIn() {
           {(config?.hasGoogleSignIn ||
             config?.hasGithubSignIn ||
             config?.hasDiscordSignIn ||
-            config?.hasCustomOAuth) && (
+            config?.hasCustomOAuth ||
+            (config?.hasGuestAccess && !invitationId)) && (
             <>
               <div className="space-y-3">
                 {config?.hasGoogleSignIn && (
@@ -313,7 +350,7 @@ function SignIn() {
                         lastLoginMethod === "github" && "border-primary/50!",
                       )}
                     >
-                      <Github className="w-5 h-5 mr-2" />
+                      <GithubIcon className="w-5 h-5 mr-2" />
                       {isGithubLoading
                         ? t("auth:signIn.signingIn")
                         : t("auth:signIn.continueWithGithub")}
@@ -382,6 +419,30 @@ function SignIn() {
                     )}
                   </div>
                 )}
+
+                {config?.hasGuestAccess && !invitationId && (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleGuestAccess}
+                      disabled={isGuestLoading || captchaPending}
+                      className="w-full"
+                    >
+                      <UserCheck className="w-5 h-5 mr-2" />
+                      {isGuestLoading
+                        ? t("auth:signIn.signingIn")
+                        : t("auth:signUp.continueAsGuest")}
+                    </Button>
+                    {captchaConfigured && TURNSTILE_SITE_KEY && (
+                      <Turnstile
+                        siteKey={TURNSTILE_SITE_KEY}
+                        onVerify={handleTurnstileVerify}
+                        onExpire={handleTurnstileExpire}
+                        onError={handleTurnstileExpire}
+                      />
+                    )}
+                  </>
+                )}
               </div>
 
               {!config?.disableLoginForm && (
@@ -399,7 +460,7 @@ function SignIn() {
             </>
           )}
           {!config?.disableLoginForm &&
-            (config?.hasSmtp ? (
+            (config?.hasSmtp && !config?.disableEmailOtpSignIn ? (
               <OtpSignInForm
                 invitationId={invitationId}
                 defaultEmail={defaultEmail}

@@ -10,7 +10,7 @@ import {
   defaultRolePayloads,
   owner,
 } from "@kaneo/permissions";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import {
@@ -34,14 +34,25 @@ import type { AccessControl } from "better-auth/plugins/access";
 import type { UserWithAnonymous } from "better-auth/plugins/anonymous";
 import { config } from "dotenv-mono";
 import { count, eq, sql } from "drizzle-orm";
+import {
+  findBillableWorkspaces,
+  formatBillableWorkspacesMessage,
+} from "./billing/controllers/find-billable-workspaces";
+import { syncWorkspaceSeats } from "./billing/controllers/sync-seats";
 import db, { schema } from "./database";
 import { publishEvent } from "./events";
+import deleteAccountData from "./user/controllers/delete-account-data";
 import { checkRegistrationAllowed } from "./utils/check-registration-allowed";
 import { checkWorkspaceName } from "./utils/check-workspace-name";
+import { mapCustomOAuthProfileToUser } from "./utils/custom-oauth-profile";
 import { generateDemoName } from "./utils/generate-demo-name";
+import { getDefaultCookieAttributes } from "./utils/get-default-cookie-attributes";
+import { getInvitationEmailSubject } from "./utils/get-invitation-email-subject";
+import { getWorkspaceInvitationEmailCopy } from "./utils/get-workspace-invitation-email-copy";
 import { getGithubSsoOAuthCredentials } from "./utils/github-sso-env";
 import { isCloud } from "./utils/is-cloud";
 import { isDisposableEmail } from "./utils/is-disposable-email";
+import { isLocalSignInPath } from "./utils/is-local-sign-in-path";
 import { verifyTurnstile } from "./utils/verify-turnstile";
 
 config();
@@ -51,23 +62,26 @@ const githubSso = getGithubSsoOAuthCredentials();
 const isRegistrationDisabled = process.env.DISABLE_REGISTRATION === "true";
 const isPasswordRegistrationDisabled =
   process.env.DISABLE_PASSWORD_REGISTRATION === "true";
+const isLoginFormDisabled = process.env.DISABLE_LOGIN_FORM === "true";
+const isEmailOtpSignInDisabled =
+  process.env.DISABLE_EMAIL_OTP_SIGN_IN === "true";
+const isWorkspaceCreationDisabled =
+  process.env.DISABLE_WORKSPACE_CREATION === "true";
+
+function normalizeInvitationId(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const normalized = value.trim();
+  if (!/^[a-z0-9_-]{1,128}$/i.test(normalized)) return undefined;
+  return normalized;
+}
+
+function isOAuthCallbackPath(path: unknown): boolean {
+  if (typeof path !== "string") return false;
+  return path.startsWith("/callback/") || path.startsWith("/oauth2/callback/");
+}
 
 const apiUrl = process.env.KANEO_API_URL || "http://localhost:1337";
 const clientUrl = process.env.KANEO_CLIENT_URL || "http://localhost:5173";
-const isHttps = apiUrl.startsWith("https://");
-const isCrossSubdomain = (() => {
-  try {
-    const apiHost = new URL(apiUrl).hostname;
-    const clientHost = new URL(clientUrl).hostname;
-    return (
-      apiHost !== clientHost &&
-      apiHost !== "localhost" &&
-      clientHost !== "localhost"
-    );
-  } catch {
-    return false;
-  }
-})();
 
 const trustedOrigins = [clientUrl];
 try {
@@ -105,19 +119,41 @@ async function getUserLocale(email: string) {
 }
 
 function getLocaleKey(locale?: string | null) {
-  return locale?.toLowerCase().startsWith("de") ? "de" : "en";
+  const normalized = locale?.toLowerCase();
+  if (normalized?.startsWith("de")) return "de";
+  if (normalized?.startsWith("vi")) return "vi";
+  if (normalized?.startsWith("ja")) return "ja";
+  return "en";
 }
 
 function getAuthEmailCopy(locale?: string | null) {
-  return getLocaleKey(locale) === "de"
-    ? {
-        magicLinkSubject: "Anmeldelink fuer Kaneo",
-        otpSubject: "Bestaetigungscode fuer Kaneo",
-      }
-    : {
-        magicLinkSubject: "Login for Kaneo",
-        otpSubject: "Authentication code for Kaneo",
-      };
+  const localeKey = getLocaleKey(locale);
+
+  if (localeKey === "de") {
+    return {
+      magicLinkSubject: "Anmeldelink fuer Kaneo",
+      otpSubject: "Bestaetigungscode fuer Kaneo",
+    };
+  }
+
+  if (localeKey === "vi") {
+    return {
+      magicLinkSubject: "Liên kết đăng nhập Kaneo",
+      otpSubject: "Mã xác minh Kaneo",
+    };
+  }
+
+  if (localeKey === "ja") {
+    return {
+      magicLinkSubject: "Kaneo ログインリンク",
+      otpSubject: "Kaneo 認証コード",
+    };
+  }
+
+  return {
+    magicLinkSubject: "Login for Kaneo",
+    otpSubject: "Authentication code for Kaneo",
+  };
 }
 
 function getDeviceAuthClientIds(): Set<string> {
@@ -133,19 +169,28 @@ function getDeviceAuthClientIds(): Set<string> {
   return new Set(["kaneo-cli", "kaneo-mcp"]);
 }
 
+const DEFAULT_TRUSTED_PROXIES = [
+  "127.0.0.0/8",
+  "::1/128",
+  "10.0.0.0/8",
+  "172.16.0.0/12",
+  "192.168.0.0/16",
+];
+
+function trustedProxies(): string[] {
+  const raw = process.env.TRUSTED_PROXIES?.trim();
+  if (!raw) {
+    return DEFAULT_TRUSTED_PROXIES;
+  }
+  return raw
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
 function getDeviceAuthVerificationUri(): string {
   const base = clientUrl.replace(/\/$/, "");
   return `${base}/device`;
-}
-
-function getInvitationEmailSubject(
-  locale: string | null,
-  inviterName: string,
-  workspaceName: string,
-) {
-  return getLocaleKey(locale) === "de"
-    ? `${inviterName} hat dich eingeladen, ${workspaceName} auf Kaneo beizutreten`
-    : `${inviterName} invited you to join ${workspaceName} on Kaneo`;
 }
 
 export const auth = betterAuth({
@@ -179,6 +224,12 @@ export const auth = betterAuth({
         required: false,
       },
     },
+    deleteUser: {
+      enabled: true,
+      beforeDelete: async (user) => {
+        await deleteAccountData(user.id);
+      },
+    },
   },
   account: {
     accountLinking: {
@@ -187,15 +238,11 @@ export const auth = betterAuth({
       // providers verify the email on their side, so they are trusted to link.
       enabled: true,
       trustedProviders: ["github", "google", "discord", "custom"],
-      // Kaneo does not require email verification on password signup, so the
-      // existing local account is usually unverified; allow linking to it so
-      // OIDC users are not locked out.
-      // SECURITY: with open password registration this means someone who
-      // pre-registered a victim's email (unverified) could be linked into by
-      // that victim's OIDC login. Instances that allow password signup
-      // alongside OIDC should set DISABLE_PASSWORD_REGISTRATION or require email
-      // verification.
-      requireLocalEmailVerified: false,
+      // Only link to an existing local account after its email has been
+      // verified. Without this check, an attacker could pre-register a victim's
+      // email with a password account and retain access after the victim signs
+      // in through a trusted OAuth/OIDC provider.
+      requireLocalEmailVerified: true,
     },
   },
   emailAndPassword: {
@@ -249,18 +296,22 @@ export const auth = betterAuth({
         }
       },
     }),
-    emailOTP({
-      async sendVerificationOTP({ email, otp, type }) {
-        if (type === "sign-in") {
-          const locale = await getUserLocale(email);
-          const copy = getAuthEmailCopy(locale);
-          await sendOtpEmail(email, copy.otpSubject, {
-            otp,
-            locale,
-          });
-        }
-      },
-    }),
+    ...(isEmailOtpSignInDisabled
+      ? []
+      : [
+          emailOTP({
+            async sendVerificationOTP({ email, otp, type }) {
+              if (type === "sign-in") {
+                const locale = await getUserLocale(email);
+                const copy = getAuthEmailCopy(locale);
+                await sendOtpEmail(email, copy.otpSubject, {
+                  otp,
+                  locale,
+                });
+              }
+            },
+          }),
+        ]),
     organization({
       // `ac` is created with a narrow `statement` shape (project/task/label/
       // workspace + the default org statements), which makes its inferred
@@ -322,7 +373,31 @@ export const auth = betterAuth({
           },
         },
       },
-      allowUserToCreateOrganization: true,
+      // When `DISABLE_WORKSPACE_CREATION` is set, only instance admins
+      // (`user.role === "admin"`) may create workspaces — mirrors the
+      // implicit-exemption shape of `DISABLE_REGISTRATION` above. This
+      // check runs before any workspace membership exists, so only the
+      // instance-wide role is meaningful here; per-workspace roles
+      // (owner/admin/member/viewer) don't apply until after a workspace
+      // is joined.
+      //
+      // `user` here comes from the session, which may be served out of
+      // the cookie cache (see `session.cookieCache` below). The
+      // first-user bootstrap promotes the user to admin in
+      // `databaseHooks.user.create.after`, but that happens after
+      // `signUpEmail` has already returned/cached the pre-promotion
+      // role, so a cached session can still say `role: "user"` for up
+      // to `cookieCache.maxAge`. Re-read the role from the database
+      // instead of trusting the (possibly stale) cached role.
+      allowUserToCreateOrganization: isWorkspaceCreationDisabled
+        ? async (user) => {
+            const [freshUser] = await db
+              .select({ role: schema.userTable.role })
+              .from(schema.userTable)
+              .where(eq(schema.userTable.id, user.id));
+            return freshUser?.role === "admin";
+          }
+        : true,
       // Better Auth defaults this to `true`, which blocks any user whose email
       // is not verified from accepting/rejecting an invitation. Kaneo does not
       // verify emails on signup (and guest/anonymous users are unverified by
@@ -342,7 +417,7 @@ export const auth = betterAuth({
           // role's permissions are derived from the compiled-in defaults
           // in `@kaneo/permissions`; admins can later replace them in the
           // Roles UI. We skip names that somehow already exist (this hook
-          // is best-effort idempotent — the boot-time backfill is the
+          // is best-effort idempotent; the boot-time backfill is the
           // belt-and-braces path).
           try {
             const existing = await db
@@ -380,10 +455,35 @@ export const auth = betterAuth({
             ownerId: user.id,
           });
         },
+        beforeDeleteOrganization: async ({ organization }) => {
+          const billable = await findBillableWorkspaces([organization.id]);
+          if (billable.length > 0) {
+            throw new APIError("CONFLICT", {
+              message: formatBillableWorkspacesMessage(
+                billable.map((workspace) => workspace.name),
+              ),
+            });
+          }
+        },
+        afterAddMember: async ({ member }) => {
+          if (member?.organizationId) {
+            void syncWorkspaceSeats(member.organizationId).catch((error) => {
+              console.error("Seat sync after member add failed:", error);
+            });
+          }
+        },
+        afterRemoveMember: async ({ member }) => {
+          if (member?.organizationId) {
+            void syncWorkspaceSeats(member.organizationId).catch((error) => {
+              console.error("Seat sync after member remove failed:", error);
+            });
+          }
+        },
       },
       async sendInvitationEmail(data) {
         const inviteLink = `${process.env.KANEO_CLIENT_URL}/invitation/accept/${data.id}`;
         const locale = await getUserLocale(data.email);
+        const copy = getWorkspaceInvitationEmailCopy(locale);
 
         const result = await sendWorkspaceInvitationEmail(
           data.email,
@@ -395,10 +495,10 @@ export const auth = betterAuth({
           {
             inviterEmail: data.inviter.user.email,
             inviterName: data.inviter.user.name,
-            locale,
             workspaceName: data.organization.name,
             invitationLink: inviteLink,
             to: data.email,
+            copy,
           },
         );
 
@@ -428,6 +528,7 @@ export const auth = betterAuth({
           responseType: process.env.CUSTOM_OAUTH_RESPONSE_TYPE || "code",
           discoveryUrl: process.env.CUSTOM_OAUTH_DISCOVERY_URL || "",
           pkce: process.env.CUSTOM_AUTH_PKCE !== "false",
+          mapProfileToUser: mapCustomOAuthProfileToUser,
         },
       ],
     }),
@@ -473,20 +574,40 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
-        before: async (user) => {
+        before: async (user, ctx) => {
+          // The anonymous() plugin creates ephemeral users for guest
+          // access; registration limits don't apply to them (guest
+          // availability is governed by DISABLE_GUEST_ACCESS instead).
+          // `isAnonymous` is `input: false` in the plugin schema, so a
+          // regular signup request cannot spoof it.
+          const userWithAnonymous = user as Partial<UserWithAnonymous>;
+          if (userWithAnonymous.isAnonymous) {
+            return;
+          }
+
           // Allow the very first signup through even when registration
-          // is disabled — that's the instance-admin bootstrap flow.
+          // is disabled: that's the instance-admin bootstrap flow.
           // Otherwise a fresh instance with DISABLE_REGISTRATION=true
           // could never be set up because `checkRegistrationAllowed`
           // would reject the first user (qodo bot #3).
-          const [{ value: existingUserCount }] = await db
+          const [userCountRow] = await db
             .select({ value: count() })
             .from(schema.userTable);
+          const existingUserCount = userCountRow?.value ?? 0;
           if (existingUserCount === 0) {
             return;
           }
 
-          const result = await checkRegistrationAllowed(user.email);
+          const invitationId = normalizeInvitationId(
+            ctx?.body?.invitationId ||
+              ctx?.query?.invitationId ||
+              ctx?.headers?.get("x-invitation-id"),
+          );
+          const result = await checkRegistrationAllowed(
+            user.email,
+            invitationId,
+            { allowInvitationByEmail: isOAuthCallbackPath(ctx?.path) },
+          );
           if (!result.allowed) {
             throw new APIError("FORBIDDEN", {
               message: result.reason,
@@ -518,8 +639,8 @@ export const auth = betterAuth({
           // transaction then sees totalUserCount > 1 and skips.
           //
           // Note: we count total users (not admins) so that upgrading
-          // an existing instance — where every existing user has
-          // role=NULL from the new column — doesn't promote the next
+          // an existing instance (where every existing user has
+          // role=NULL from the new column) doesn't promote the next
           // signup to admin (qodo bot #4).
           await db.transaction(async (tx) => {
             await tx.execute(sql`SELECT pg_advisory_xact_lock(2026)`);
@@ -546,13 +667,20 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
+      if (isLoginFormDisabled && isLocalSignInPath(ctx.path)) {
+        throw new APIError("FORBIDDEN", {
+          message:
+            "Local sign-in is disabled. Please use a configured social or OIDC sign-in method.",
+        });
+      }
+
       // Block invite-member calls on cloud from anonymous users or to
       // disposable-email addresses. The 2026-05-28 incident saw ~14k phishing
       // invites sent from throwaway disposable-email signups; gating here
       // shuts that path off without affecting self-hosted instances.
       if (ctx.path === "/organization/invite-member" && isCloud()) {
         // `before` hooks don't auto-populate ctx.context.session; load it
-        // explicitly. `disableRefresh` keeps this gate cheap — we only need
+        // explicitly. `disableRefresh` keeps this gate cheap: we only need
         // the user record, not a session refresh side-effect.
         const session = await getSessionFromCtx(ctx, {
           disableRefresh: true,
@@ -631,10 +759,11 @@ export const auth = betterAuth({
         ctx.body?.email ||
         ctx.query?.email ||
         ctx.headers?.get("x-invitation-email");
-      const invitationId =
+      const invitationId = normalizeInvitationId(
         ctx.body?.invitationId ||
-        ctx.query?.invitationId ||
-        ctx.headers?.get("x-invitation-id");
+          ctx.query?.invitationId ||
+          ctx.headers?.get("x-invitation-id"),
+      );
 
       if (ctx.path === "/sign-up/email") {
         const result = await checkRegistrationAllowed(email, invitationId);
@@ -668,13 +797,14 @@ export const auth = betterAuth({
     }),
   },
   advanced: {
-    defaultCookieAttributes: {
-      // For cross-subdomain auth with HTTPS, use sameSite: "none" with secure: true
-      // For same-domain or HTTP deployments, use sameSite: "lax" with secure: false
-      sameSite: isCrossSubdomain && isHttps ? "none" : "lax",
-      secure: isCrossSubdomain && isHttps, // must be true when sameSite is "none"
-      partitioned: isCrossSubdomain && isHttps,
-      domain: process.env.COOKIE_DOMAIN || undefined, // Optional: e.g., ".andrej.com" for explicit cross-subdomain cookies
+    ipAddress: {
+      ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
+      trustedProxies: trustedProxies(),
     },
+    defaultCookieAttributes: getDefaultCookieAttributes({
+      apiUrl,
+      clientUrl,
+      cookieDomain: process.env.COOKIE_DOMAIN,
+    }),
   },
 });

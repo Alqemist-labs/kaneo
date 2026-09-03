@@ -61,6 +61,8 @@ helm uninstall my-kaneo
 | `nameOverride`           | String to partially override the fullname template (will maintain the release name)                                | `""`        |
 | `fullnameOverride`       | String to fully override the fullname template                                                                     | `""`        |
 | `replicaCount`           | Number of replicas (ignored if autoscaling is enabled)                                                             | `1`         |
+| `enableServiceLinks`     | Controls Pod's enableServiceLinks field                                                                            | `false`   |
+| `topologySpreadConstraints` | Controls Pod's topologySpreadConstraints field                                                                         | `[]`   |
 ### Autoscaling parameters
 | Name                                | Description                                                                                                        | Value       |
 | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------- |
@@ -97,14 +99,15 @@ When CPU autoscaling is enabled, set `kaneo.resources.requests.cpu`; Kubernetes 
 | `kaneo.service.port`                | Kaneo service port                                                                                                 | `5173`                          |
 | `kaneo.service.targetPort`          | Kaneo container port                                                                                               | `5173`                          |
 | `kaneo.env`                         | Environment variables for the Kaneo container                                                                      | See `values.yaml`               |
-| `kaneo.env.clientUrl`               | Public URL of the Kaneo instance. **Required for any non-localhost deployment** — sets `KANEO_CLIENT_URL`. Omitting this causes "invalid origin" errors on login. Note: this key is case-sensitive (`clientUrl`, not `clientURL`). | `""` |
+| `kaneo.env.clientUrl`               | Public URL of the Kaneo instance. **Required for any non-localhost deployment**; sets `KANEO_CLIENT_URL`. Omitting this causes "invalid origin" errors on login. Note: this key is case-sensitive (`clientUrl`, not `clientURL`). | `""` |
 | `kaneo.env.corsOrigins`             | Allowed CORS origins as a comma-separated string or YAML list                                                      | `[]`                            |
-| `kaneo.env.authSecret`              | Better Auth secret, ignored if existingSecret is enabled                                                           | `change_me_to_at_least_32_characters_long_string` |
+| `kaneo.env.authSecret`              | Required Better Auth secret (minimum 32 characters), ignored if existingSecret is enabled                           | `""` |
 | `kaneo.env.existingSecret.enabled`  | Whether to use an existing secret for `AUTH_SECRET`                                                                | `false`                         |
 | `kaneo.env.existingSecret.name`     | Name of the existing secret containing `AUTH_SECRET`                                                               | `""`                            |
 | `kaneo.env.existingSecret.key`      | Key in the existing secret that contains `AUTH_SECRET`                                                             | `auth-secret`                   |
 | `kaneo.env.disableRegistration`     | Disable new user registration                                                                                      | `false`                         |
 | `kaneo.env.disablePasswordRegistration` | Disable password-based account creation while keeping social/OIDC registration available                        | `false`                         |
+| `kaneo.env.disableEmailOtpSignIn`   | Use email/password sign-in instead of verification codes when SMTP is configured                                   | `false`                         |
 | `kaneo.env.database.external.enabled` | Use external PostgreSQL database (set postgresql.enabled to false)                                               | `false`                         |
 | `kaneo.env.database.external.host`  | External PostgreSQL host                                                                                           | `""`                            |
 | `kaneo.env.database.external.port`  | External PostgreSQL port                                                                                           | `5432`                          |
@@ -115,6 +118,7 @@ When CPU autoscaling is enabled, set `kaneo.resources.requests.cpu`; Kubernetes 
 | `kaneo.env.database.external.existingSecret.name` | Name of the secret containing the database connection URI                                    | `""`                            |
 | `kaneo.env.database.external.existingSecret.passwordKey` | Key in the secret whose value is a full PostgreSQL connection URI                       | `postgres_uri`                  |
 | `kaneo.extraEnv`                    | Additional Kubernetes EnvVar entries appended to the Kaneo container                                               | `[]`                            |
+| `kaneo.extraEnvFrom`                | Additional Kubernetes EnvFromSource entries appended to the Kaneo container                                        | `[]`                            |
 | `kaneo.resources`                   | Resource requests and limits for the Kaneo container (optional, disabled by default)                               | `{}`                            |
 | `podSecurityContext`                | Security context applied at the Pod level                                                                          | `{}`                            |
 | `securityContext`                   | Security context applied at the container level                                                                    | `{}`                            |
@@ -354,7 +358,7 @@ kaneo:
     clientUrl: "https://kaneo.your-domain.com"
 ```
 
-> **Note:** The key is `clientUrl` (camelCase). `clientURL` (all-caps) is silently ignored — the env var will be empty and login will fail with no helpful error.
+> **Note:** The key is `clientUrl` (camelCase). `clientURL` (all-caps) is silently ignored; the env var will be empty and login will fail with no helpful error.
 
 ### Pods crash immediately after upgrading to use `existingSecret`
 If pods enter `CrashLoopBackOff` after switching to an existing secret for the external database, the connection URI in the secret is likely wrong. Check what the pod is actually using:

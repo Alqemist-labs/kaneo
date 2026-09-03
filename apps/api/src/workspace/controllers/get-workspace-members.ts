@@ -10,7 +10,6 @@ async function getWorkspaceMembers(workspaceId: string) {
       name: userTable.name,
       email: userTable.email,
       image: userTable.image,
-      avatarUpdatedAt: userTable.avatarUpdatedAt,
       role: workspaceUserTable.role,
     })
     .from(workspaceUserTable)
@@ -22,10 +21,8 @@ async function getWorkspaceMembers(workspaceId: string) {
     name: m.name,
     email: m.email,
     image: resolveUserDisplayImageUrl({
-      id: m.id,
       email: m.email,
       image: m.image,
-      avatarUpdatedAt: m.avatarUpdatedAt,
     }),
     role: m.role,
   }));

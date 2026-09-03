@@ -1,5 +1,6 @@
 import {
   CalendarDays,
+  CalendarRange,
   Check,
   Menu,
   Plus,
@@ -20,9 +21,10 @@ import { cn } from "@/lib/cn";
 type MobileProjectNavProps = {
   workspaceId: string;
   projectId: string;
-  activeView: "backlog" | "board" | "gantt" | "labels";
+  activeView: "backlog" | "board" | "calendar" | "gantt" | "labels";
   onSelectBoard: () => void;
   onSelectBacklog: () => void;
+  onSelectCalendar: () => void;
   onSelectGantt: () => void;
   onSelectLabels: () => void;
   onSelectProject: (projectId: string) => void;
@@ -35,6 +37,7 @@ export default function MobileProjectNav({
   activeView,
   onSelectBoard,
   onSelectBacklog,
+  onSelectCalendar,
   onSelectGantt,
   onSelectLabels,
   onSelectProject,
@@ -62,7 +65,7 @@ export default function MobileProjectNav({
             <p className="px-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
               View
             </p>
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-3 gap-1">
               <button
                 type="button"
                 onClick={onSelectBacklog}
@@ -87,6 +90,19 @@ export default function MobileProjectNav({
               >
                 <SquareKanban className="size-3.5" />
                 {t("tasks:projectNav.tasks")}
+              </button>
+              <button
+                type="button"
+                onClick={onSelectCalendar}
+                className={cn(
+                  "flex w-full items-center justify-center gap-1 whitespace-nowrap rounded-md border px-2 py-1.5 text-xs font-medium transition-colors",
+                  activeView === "calendar"
+                    ? "border-border bg-secondary text-foreground"
+                    : "border-transparent text-muted-foreground hover:bg-accent",
+                )}
+              >
+                <CalendarRange className="size-3.5" />
+                {t("tasks:calendar.title")}
               </button>
               <button
                 type="button"

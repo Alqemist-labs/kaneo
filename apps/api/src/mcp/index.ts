@@ -1,30 +1,55 @@
 import { randomUUID } from "node:crypto";
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer as LegacyMcpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import {
+  isJsonContentType,
+  isLegacyRequest,
+} from "@modelcontextprotocol/server";
 import { Hono } from "hono";
 import { auth } from "../auth";
+import { apiRouter, createRoute, jsonResponse } from "../openapi";
 import {
-  createAuthCode,
-  exchangeCode,
-  getClient,
-  registerClient,
-} from "./oauth";
-import { registerMcpTools } from "./tools";
+  beginMcpAuthorization,
+  decideMcpAuthorizationRequest,
+  getMcpAuthorizationRequest,
+  registerMcpClient,
+} from "./controllers/oauth-consent";
+import { createModernMcpHandler } from "./modern";
+import { exchangeCode } from "./oauth";
+import {
+  authorizationDecisionResponseSchema,
+  authorizationDecisionSchema,
+  authorizationQuerySchema,
+  authorizationRequestParamSchema,
+  authorizationRequestResponseSchema,
+  clientRegistrationResponseSchema,
+  clientRegistrationSchema,
+  oauthErrorSchema,
+} from "./schemas";
+import { registerMcpTools, toMcpToolRegistrar } from "./tools";
 
-const clientUrl = process.env.KANEO_CLIENT_URL || "http://localhost:5173";
-const apiUrl = (process.env.KANEO_API_URL || "http://localhost:1337").replace(
-  /\/api\/?$/,
-  "",
-);
+const publicApiUrl = (process.env.KANEO_API_URL || "http://localhost:1337")
+  .replace(/\/api\/?$/, "")
+  .replace(/\/+$/, "");
+const internalApiUrl = (
+  process.env.KANEO_INTERNAL_API_URL || "http://127.0.0.1:1337"
+)
+  .replace(/\/api\/?$/, "")
+  .replace(/\/+$/, "");
 
-const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>();
+type McpSession = {
+  transport: WebStandardStreamableHTTPServerTransport;
+  userId: string;
+};
 
-function createMcpServerForUser(token: string): McpServer {
-  const server = new McpServer({
+const sessions = new Map<string, McpSession>();
+
+function createMcpServerForUser(token: string): LegacyMcpServer {
+  const server = new LegacyMcpServer({
     name: "kaneo-mcp",
     version: "1.0.0",
   });
-  registerMcpTools(server, apiUrl, token);
+  registerMcpTools(toMcpToolRegistrar(server), internalApiUrl, token);
   return server;
 }
 
@@ -45,167 +70,182 @@ async function validateBearerToken(
   return { userId: session.user.id, token };
 }
 
-const mcp = new Hono();
+const mcp = apiRouter();
 
-mcp.post("/mcp/register", async (c) => {
-  const body = await c.req.json();
-  const client = registerClient({
-    redirectUris: body.redirect_uris ?? [],
-    clientName: body.client_name,
-  });
-  return c.json({
-    client_id: client.clientId,
-    client_id_issued_at: client.issuedAt,
-    redirect_uris: client.redirectUris,
-    client_name: client.clientName,
-    token_endpoint_auth_method: body.token_endpoint_auth_method ?? "none",
-    grant_types: body.grant_types ?? ["authorization_code"],
-    response_types: body.response_types ?? ["code"],
-  });
+const jsonError = (description: string) =>
+  jsonResponse(description, oauthErrorSchema);
+
+const registerRoute = createRoute({
+  method: "post",
+  operationId: "registerMcpOAuthClient",
+  path: "/mcp/register",
+  tags: ["MCP"],
+  summary: "Register MCP OAuth client",
+  description:
+    "Dynamically register a public OAuth client for the MCP endpoint. Public clients hold no secret, so authorization is protected by PKCE and an explicit consent step.",
+  security: [],
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: clientRegistrationSchema } },
+    },
+  },
+  responses: {
+    200: jsonResponse(
+      "Registered OAuth client",
+      clientRegistrationResponseSchema,
+    ),
+    400: jsonError("Invalid client metadata"),
+  },
 });
 
-mcp.get("/mcp/authorize", async (c) => {
-  const clientId = c.req.query("client_id");
-  const redirectUri = c.req.query("redirect_uri");
-  const codeChallenge = c.req.query("code_challenge");
-  const state = c.req.query("state");
+const authorizeRoute = createRoute({
+  method: "get",
+  operationId: "authorizeMcpOAuthClient",
+  path: "/mcp/authorize",
+  tags: ["MCP"],
+  summary: "Start MCP authorization",
+  description:
+    "Begin an MCP OAuth authorization. Redirects the browser to the Kaneo consent page, which then approves or denies the request.",
+  security: [],
+  request: { query: authorizationQuerySchema },
+  responses: {
+    302: { description: "Redirect to the Kaneo consent page" },
+    400: jsonError("Invalid authorization request"),
+  },
+});
 
-  if (!clientId || !redirectUri || !codeChallenge) {
-    return c.json({ error: "invalid_request" }, 400);
-  }
+const getAuthorizationRequestRoute = createRoute({
+  method: "get",
+  operationId: "getMcpAuthorizationRequest",
+  path: "/mcp/authorize/request/{requestId}",
+  tags: ["MCP"],
+  summary: "Get consent request",
+  description:
+    "Get the client name and redirect URI for a pending consent request, so the consent page can show who is asking.",
+  security: [],
+  request: { params: authorizationRequestParamSchema },
+  responses: {
+    200: jsonResponse(
+      "Authorization request details",
+      authorizationRequestResponseSchema,
+    ),
+    400: jsonError("Invalid OAuth client"),
+    404: jsonError("Unknown or expired authorization request"),
+  },
+});
 
-  const client = getClient(clientId);
-  if (!client) {
-    return c.json({ error: "invalid_client" }, 400);
-  }
+const decideAuthorizationRequestRoute = createRoute({
+  method: "post",
+  operationId: "decideMcpAuthorizationRequest",
+  path: "/mcp/authorize/request/{requestId}",
+  tags: ["MCP"],
+  summary: "Decide consent request",
+  description:
+    "Approve or deny a pending consent request and get the URL to send the browser back to.",
+  request: {
+    params: authorizationRequestParamSchema,
+    body: {
+      required: true,
+      content: { "application/json": { schema: authorizationDecisionSchema } },
+    },
+  },
+  responses: {
+    200: jsonResponse(
+      "OAuth client redirect",
+      authorizationDecisionResponseSchema,
+    ),
+    400: jsonError("Invalid request or OAuth client"),
+    401: jsonError("Authentication required"),
+    403: jsonError("Untrusted request origin"),
+    404: jsonError("Unknown or expired authorization request"),
+  },
+});
 
-  const session = await auth.api.getSession({
-    headers: c.req.raw.headers,
-  });
-
-  if (session?.user?.id) {
-    const code = createAuthCode({
-      clientId,
-      userId: session.user.id,
-      codeChallenge,
-      redirectUri,
+mcp
+  .openapi(registerRoute, async (c) =>
+    c.json(await registerMcpClient(c.req.valid("json")), 200),
+  )
+  .openapi(authorizeRoute, async (c) =>
+    c.redirect(await beginMcpAuthorization(c.req.valid("query"))),
+  )
+  .openapi(getAuthorizationRequestRoute, async (c) =>
+    c.json(
+      await getMcpAuthorizationRequest(c.req.valid("param").requestId),
+      200,
+    ),
+  )
+  .openapi(decideAuthorizationRequestRoute, async (c) => {
+    const redirect = await decideMcpAuthorizationRequest({
+      requestId: c.req.valid("param").requestId,
+      decision: c.req.valid("json"),
+      headers: c.req.raw.headers,
+      origin: c.req.header("origin"),
     });
-    const url = new URL(redirectUri);
-    url.searchParams.set("code", code);
-    if (state) url.searchParams.set("state", state);
-    return c.redirect(url.toString());
-  }
-
-  const deviceRes = await fetch(`${apiUrl}/api/auth/device/code`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ client_id: "kaneo-mcp" }),
+    return c.json({ redirect }, 200);
   });
 
-  if (!deviceRes.ok) {
-    return c.json({ error: "device_code_failed" }, 500);
+mcp.all("/mcp", async (c) => {
+  const authResult = await validateBearerToken(c.req.raw);
+  if (!authResult) {
+    const prmUrl = `${publicApiUrl}/api/.well-known/oauth-protected-resource/api/mcp`;
+    c.header("WWW-Authenticate", `Bearer resource_metadata="${prmUrl}"`);
+    return c.json(
+      {
+        error: "invalid_token",
+        error_description: "Missing or invalid token",
+      },
+      401,
+    );
   }
 
-  const device = (await deviceRes.json()) as {
-    device_code: string;
-    user_code: string;
-    verification_uri: string;
-    interval: number;
-    expires_in: number;
+  const sessionId = c.req.header("mcp-session-id");
+
+  if (sessionId) {
+    const existing = sessions.get(sessionId);
+    // A mismatched owner is reported as missing rather than forbidden so the
+    // response cannot confirm that someone else's session id is valid.
+    if (existing && existing.userId === authResult.userId) {
+      return existing.transport.handleRequest(c.req.raw);
+    }
+    return c.json({ error: "Session not found" }, 404);
+  }
+
+  if (c.req.method !== "POST") {
+    return c.json({ error: "Method not allowed" }, 405);
+  }
+
+  if (!isJsonContentType(c.req.header("content-type"))) {
+    return c.json({ error: "Unsupported Media Type" }, 415);
+  }
+
+  if (!(await isLegacyRequest(c.req.raw.clone()))) {
+    const modern = createModernMcpHandler(authResult.token, internalApiUrl);
+    return modern.fetch(c.req.raw);
+  }
+
+  const transport = new WebStandardStreamableHTTPServerTransport({
+    sessionIdGenerator: () => randomUUID(),
+  });
+
+  transport.onclose = () => {
+    if (transport.sessionId) {
+      sessions.delete(transport.sessionId);
+    }
   };
 
-  const devicePageUrl = `${clientUrl}/device?user_code=${encodeURIComponent(device.user_code)}`;
+  const server = createMcpServerForUser(authResult.token);
+  await server.connect(transport);
+  const response = await transport.handleRequest(c.req.raw);
 
-  return c.html(`<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kaneo MCP</title>
-  <script>window.location.href = ${JSON.stringify(devicePageUrl)};</script>
-</head>
-<body>Redirecting to Kaneo…</body>
-<script>
-  const deviceCode = ${JSON.stringify(device.device_code)};
-  const interval = ${device.interval} * 1000;
-  const apiUrl = ${JSON.stringify(apiUrl)};
-  const redirectUri = ${JSON.stringify(redirectUri)};
-  const codeChallenge = ${JSON.stringify(codeChallenge)};
-  const clientId = ${JSON.stringify(clientId)};
-  const state = ${JSON.stringify(state || "")};
-
-  async function poll() {
-    try {
-      const res = await fetch(apiUrl + "/api/auth/device/token", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "urn:ietf:params:oauth:grant-type:device_code",
-          device_code: deviceCode,
-          client_id: "kaneo-mcp"
-        })
-      });
-      const data = await res.json();
-
-      if (res.ok && data.access_token) {
-        const codeRes = await fetch(apiUrl + "/api/mcp/authorize/callback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            access_token: data.access_token,
-            client_id: clientId,
-            code_challenge: codeChallenge,
-            redirect_uri: redirectUri,
-            state: state
-          })
-        });
-        const codeData = await codeRes.json();
-        if (codeData.redirect) window.location.href = codeData.redirect;
-        return;
-      }
-
-      if (data.error === "authorization_pending" || data.error === "slow_down") {
-        setTimeout(poll, data.error === "slow_down" ? interval + 5000 : interval);
-        return;
-      }
-    } catch {
-      setTimeout(poll, interval);
-    }
+  if (transport.sessionId) {
+    sessions.set(transport.sessionId, {
+      transport,
+      userId: authResult.userId,
+    });
   }
 
-  setTimeout(poll, interval);
-</script>
-</html>`);
-});
-
-mcp.post("/mcp/authorize/callback", async (c) => {
-  const body = await c.req.json();
-  const { access_token, client_id, code_challenge, redirect_uri, state } = body;
-
-  if (!access_token || !client_id || !code_challenge || !redirect_uri) {
-    return c.json({ error: "invalid_request" }, 400);
-  }
-
-  const headers = new Headers();
-  headers.set("authorization", `Bearer ${access_token}`);
-  const session = await auth.api.getSession({ headers });
-
-  if (!session?.user?.id) {
-    return c.json({ error: "invalid_token" }, 401);
-  }
-
-  const code = createAuthCode({
-    clientId: client_id,
-    userId: session.user.id,
-    codeChallenge: code_challenge,
-    redirectUri: redirect_uri,
-  });
-
-  const url = new URL(redirect_uri);
-  url.searchParams.set("code", code);
-  if (state) url.searchParams.set("state", state);
-
-  return c.json({ redirect: url.toString() });
+  return response;
 });
 
 mcp.post("/mcp/token", async (c) => {
@@ -247,17 +287,17 @@ mcp.post("/mcp/token", async (c) => {
 
 mcp.get("/.well-known/oauth-protected-resource/api/mcp", (c) =>
   c.json({
-    resource: `${apiUrl}/api/mcp`,
-    authorization_servers: [`${apiUrl}/api`],
+    resource: `${publicApiUrl}/api/mcp`,
+    authorization_servers: [`${publicApiUrl}/api`],
   }),
 );
 
 mcp.get("/.well-known/oauth-authorization-server/api", (c) =>
   c.json({
-    issuer: `${apiUrl}/api`,
-    authorization_endpoint: `${apiUrl}/api/mcp/authorize`,
-    token_endpoint: `${apiUrl}/api/mcp/token`,
-    registration_endpoint: `${apiUrl}/api/mcp/register`,
+    issuer: `${publicApiUrl}/api`,
+    authorization_endpoint: `${publicApiUrl}/api/mcp/authorize`,
+    token_endpoint: `${publicApiUrl}/api/mcp/token`,
+    registration_endpoint: `${publicApiUrl}/api/mcp/register`,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code"],
     code_challenge_methods_supported: ["S256"],
@@ -268,7 +308,7 @@ mcp.get("/.well-known/oauth-authorization-server/api", (c) =>
 mcp.all("/mcp", async (c) => {
   const authResult = await validateBearerToken(c.req.raw);
   if (!authResult) {
-    const prmUrl = `${apiUrl}/api/.well-known/oauth-protected-resource/api/mcp`;
+    const prmUrl = `${publicApiUrl}/api/.well-known/oauth-protected-resource/api/mcp`;
     c.header("WWW-Authenticate", `Bearer resource_metadata="${prmUrl}"`);
     return c.json(
       {
@@ -283,14 +323,25 @@ mcp.all("/mcp", async (c) => {
 
   if (sessionId) {
     const existing = sessions.get(sessionId);
-    if (existing) {
-      return existing.handleRequest(c.req.raw);
+    // A mismatched owner is reported as missing rather than forbidden so the
+    // response cannot confirm that someone else's session id is valid.
+    if (existing && existing.userId === authResult.userId) {
+      return existing.transport.handleRequest(c.req.raw);
     }
     return c.json({ error: "Session not found" }, 404);
   }
 
   if (c.req.method !== "POST") {
     return c.json({ error: "Method not allowed" }, 405);
+  }
+
+  if (!isJsonContentType(c.req.header("content-type"))) {
+    return c.json({ error: "Unsupported Media Type" }, 415);
+  }
+
+  if (!(await isLegacyRequest(c.req.raw.clone()))) {
+    const modern = createModernMcpHandler(authResult.token, internalApiUrl);
+    return modern.fetch(c.req.raw);
   }
 
   const transport = new WebStandardStreamableHTTPServerTransport({
@@ -308,7 +359,10 @@ mcp.all("/mcp", async (c) => {
   const response = await transport.handleRequest(c.req.raw);
 
   if (transport.sessionId) {
-    sessions.set(transport.sessionId, transport);
+    sessions.set(transport.sessionId, {
+      transport,
+      userId: authResult.userId,
+    });
   }
 
   return response;

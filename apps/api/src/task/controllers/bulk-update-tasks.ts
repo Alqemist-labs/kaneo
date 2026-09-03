@@ -6,9 +6,13 @@ import {
   labelTable,
   projectTable,
   taskTable,
+  userTable,
   workspaceUserTable,
 } from "../../database/schema";
 import { publishEvent } from "../../events";
+import { removeLabelFromGitea } from "../../plugins/gitea/utils/sync-label-to-gitea";
+import { removeLabelFromGitHub } from "../../plugins/github/utils/sync-label-to-github";
+import { assertAssignableUser } from "../../utils/assert-assignable-user";
 import {
   assertValidPriority,
   assertValidTaskStatus,
@@ -37,7 +41,10 @@ async function bulkUpdateTasks({
   const tasks = await db
     .select({
       id: taskTable.id,
+      title: taskTable.title,
       projectId: taskTable.projectId,
+      userId: taskTable.userId,
+      dueDate: taskTable.dueDate,
       workspaceId: projectTable.workspaceId,
     })
     .from(taskTable)
@@ -158,40 +165,62 @@ async function bulkUpdateTasks({
     }
 
     case "updateAssignee": {
+      const assigneeId = value?.trim() || null;
+
+      if (assigneeId) {
+        await assertAssignableUser(assigneeId, workspaceId);
+      }
+
+      const newAssigneeName = assigneeId
+        ? (
+            await db
+              .select({ name: userTable.name })
+              .from(userTable)
+              .where(eq(userTable.id, assigneeId))
+              .limit(1)
+          )[0]?.name
+        : undefined;
+
       const result = await db
         .update(taskTable)
-        .set({ userId: value || null })
+        .set({ userId: assigneeId })
         .where(inArray(taskTable.id, foundIds));
 
       updatedCount = result.rowCount ?? foundIds.length;
 
       for (const task of tasks) {
-        const eventType = value ? "task.assignee_changed" : "task.unassigned";
+        const eventType = assigneeId
+          ? "task.assignee_changed"
+          : "task.unassigned";
         await publishEvent(eventType, {
           taskId: task.id,
           projectId: task.projectId,
           userId,
-          newAssigneeId: value || null,
-          type: value ? "assignee_changed" : "unassigned",
+          oldAssignee: task.userId,
+          newAssignee: newAssigneeName,
+          newAssigneeId: assigneeId,
+          title: task.title,
+          type: assigneeId ? "assignee_changed" : "unassigned",
         });
       }
       break;
     }
 
     case "delete": {
-      for (const task of tasks) {
-        await publishEvent("task.deleted", {
-          taskId: task.id,
-          projectId: task.projectId,
-          userId,
-        });
-      }
-
       const result = await db
         .delete(taskTable)
         .where(inArray(taskTable.id, foundIds));
 
       updatedCount = result.rowCount ?? foundIds.length;
+
+      for (const task of tasks) {
+        await publishEvent("task.deleted", {
+          taskId: task.id,
+          projectId: task.projectId,
+          userId,
+          title: task.title,
+        });
+      }
       break;
     }
 
@@ -206,6 +235,12 @@ async function bulkUpdateTasks({
 
       if (!label) {
         throw new HTTPException(404, { message: "Label not found" });
+      }
+
+      if (label.workspaceId && label.workspaceId !== workspaceId) {
+        throw new HTTPException(400, {
+          message: "Label and tasks must belong to the same workspace",
+        });
       }
 
       for (const task of tasks) {
@@ -245,19 +280,50 @@ async function bulkUpdateTasks({
       if (!value) {
         throw new HTTPException(400, { message: "Label ID is required" });
       }
-      const result = await db
-        .update(labelTable)
-        .set({ taskId: null })
+
+      const label = await db.query.labelTable.findFirst({
+        where: eq(labelTable.id, value),
+      });
+
+      if (!label) {
+        throw new HTTPException(404, { message: "Label not found" });
+      }
+
+      const deletedLabels = await db
+        .delete(labelTable)
         .where(
-          and(eq(labelTable.id, value), inArray(labelTable.taskId, foundIds)),
+          and(
+            eq(labelTable.workspaceId, workspaceId),
+            eq(labelTable.name, label.name),
+            inArray(labelTable.taskId, foundIds),
+          ),
+        )
+        .returning();
+
+      updatedCount = deletedLabels.length;
+
+      for (const deletedLabel of deletedLabels) {
+        if (!deletedLabel.taskId) continue;
+
+        removeLabelFromGitHub(deletedLabel.taskId, deletedLabel.name).catch(
+          (error) => {
+            console.error("Failed to remove label from GitHub:", error);
+          },
+        );
+        removeLabelFromGitea(deletedLabel.taskId, deletedLabel.name).catch(
+          (error) => {
+            console.error("Failed to remove label from Gitea:", error);
+          },
         );
 
-      updatedCount = result.rowCount ?? foundIds.length;
+        const task = tasks.find((t) => t.id === deletedLabel.taskId);
+        if (!task) continue;
 
-      for (const task of tasks) {
         await publishEvent("task.label_unassigned", {
+          label: deletedLabel,
+          task,
           projectId: task.projectId,
-          taskId: task.id,
+          taskId: deletedLabel.taskId,
           userId,
           type: "label_unassigned",
         });
@@ -288,7 +354,9 @@ async function bulkUpdateTasks({
           taskId: task.id,
           projectId: task.projectId,
           userId,
+          oldDueDate: task.dueDate,
           newDueDate: parsedDate,
+          title: task.title,
           type: "due_date_changed",
         });
       }

@@ -1,71 +1,69 @@
-import { Hono } from "hono";
 import { HTTPException } from "hono/http-exception";
-import { describeRoute, resolver } from "hono-openapi";
-import * as v from "valibot";
-import deleteUserAvatar from "./controllers/delete-user-avatar";
-import uploadUserAvatar from "./controllers/upload-user-avatar";
+import {
+  apiRouter,
+  createRoute,
+  errorResponse,
+  jsonResponse,
+} from "../openapi";
+import { MAX_AVATAR_BYTES } from "./avatar";
+import deleteAvatar from "./controllers/delete-avatar";
+import saveAvatar from "./controllers/save-avatar";
+import { avatarDeletedSchema, avatarSchema } from "./response";
+import { uploadAvatarBody } from "./schema";
 
-const user = new Hono<{
-  Variables: { userId: string };
-}>()
-  .post(
-    "/profile/avatar",
-    describeRoute({
-      operationId: "uploadUserAvatar",
-      tags: ["User"],
-      description: "Upload a profile picture (JPEG, PNG or WebP, max 5 MB)",
-      responses: {
-        200: {
-          description: "Avatar URL to use in the client",
-          content: {
-            "application/json": {
-              schema: resolver(
-                v.object({
-                  image: v.string(),
-                }),
-              ),
-            },
-          },
-        },
-      },
-    }),
-    async (c) => {
-      const userId = c.get("userId");
-      if (!userId) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
-
-      const body = await c.req.parseBody();
-      const file = body.avatar ?? body.file;
-      if (!file || typeof file === "string") {
-        throw new HTTPException(400, {
-          message: "Missing file field (avatar)",
-        });
-      }
-
-      const result = await uploadUserAvatar(userId, file as File);
-      return c.json(result);
+const uploadAvatarRoute = createRoute({
+  method: "put",
+  operationId: "uploadUserAvatar",
+  path: "/avatar",
+  tags: ["User"],
+  summary: "Upload avatar",
+  description: `Store a base64 encoded avatar (PNG, JPEG, or WebP, up to ${Math.floor(
+    MAX_AVATAR_BYTES / 1024,
+  )}KB) for the current user and return its public URL. Replaces any existing avatar.`,
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: uploadAvatarBody } },
     },
-  )
-  .delete(
-    "/profile/avatar",
-    describeRoute({
-      operationId: "deleteUserAvatar",
-      tags: ["User"],
-      description: "Remove uploaded profile picture (falls back to Gravatar)",
-      responses: {
-        204: { description: "Avatar removed" },
-      },
-    }),
-    async (c) => {
-      const userId = c.get("userId");
-      if (!userId) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
+  },
+  responses: {
+    200: jsonResponse("Avatar stored", avatarSchema),
+    400: errorResponse(
+      "Unsupported content type, malformed base64, or too large",
+    ),
+  },
+});
 
-      await deleteUserAvatar(userId);
-      return c.body(null, 204);
-    },
+const deleteAvatarRoute = createRoute({
+  method: "delete",
+  operationId: "deleteUserAvatar",
+  path: "/avatar",
+  tags: ["User"],
+  summary: "Delete avatar",
+  description:
+    "Remove the uploaded avatar of the current user. Succeeds even when there was nothing to remove.",
+  responses: {
+    200: jsonResponse("Avatar removed", avatarDeletedSchema),
+  },
+});
+
+const user = apiRouter()
+  .openapi(uploadAvatarRoute, async (c) => {
+    const { contentType, data } = c.req.valid("json");
+    try {
+      return c.json(
+        await saveAvatar({ userId: c.get("userId"), contentType, data }),
+        200,
+      );
+    } catch (error) {
+      throw new HTTPException(400, {
+        message:
+          error instanceof Error ? error.message : "Invalid avatar upload",
+      });
+    }
+  })
+  .openapi(deleteAvatarRoute, async (c) =>
+    c.json(await deleteAvatar(c.get("userId")), 200),
   );
 
 export default user;

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, vi } from "vitest";
 
 // Prevent dotenv-mono from loading the local .env file during tests.
-// All env vars are set explicitly below — the .env file must be ignored.
+// All env vars are set explicitly below; the .env file must be ignored.
 vi.mock("dotenv-mono", () => ({
   config: () => {},
 }));
@@ -72,6 +72,7 @@ process.env.KANEO_CLIENT_URL = "http://localhost:5173";
 process.env.DISABLE_GUEST_ACCESS = "false";
 process.env.DISABLE_REGISTRATION = "false";
 process.env.DISABLE_PASSWORD_REGISTRATION = "false";
+process.env.DISABLE_EMAIL_OTP_SIGN_IN = "false";
 process.env.DISABLE_LOGIN_FORM = "";
 process.env.DEMO_MODE = "false";
 process.env.SMTP_HOST = "";

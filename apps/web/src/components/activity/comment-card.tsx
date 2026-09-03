@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { ExternalLink, Github, Pencil, Trash2 } from "lucide-react";
+import { ExternalLink, Pencil, Trash2 } from "lucide-react";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
 import CommentEditor from "@/components/activity/comment-editor";
+import { GithubIcon } from "@/components/icons/github-icon";
 import { useAuth } from "@/components/providers/auth-provider/hooks/use-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
 import useDeleteComment from "@/hooks/mutations/comment/use-delete-comment";
 import useUpdateComment from "@/hooks/mutations/comment/use-update-comment";
 import { formatDateTime, formatRelativeTime } from "@/lib/format";
+import { getInitials } from "@/lib/get-initials";
 import { toast } from "@/lib/toast";
 
 type CommentCardProps = {
@@ -116,7 +118,7 @@ export default function CommentCard({
                 <Avatar className="h-6 w-6">
                   <AvatarImage src={user?.image ?? ""} alt={user?.name || ""} />
                   <AvatarFallback className="bg-muted text-xs font-medium">
-                    {user?.name?.charAt(0).toUpperCase()}
+                    {getInitials(user?.name)}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium text-foreground/92 hover:text-foreground transition-colors">
@@ -129,7 +131,7 @@ export default function CommentCard({
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user?.image ?? ""} alt={user?.name || ""} />
                   <AvatarFallback className="bg-muted text-xs font-medium">
-                    {user?.name?.charAt(0).toUpperCase()}
+                    {getInitials(user?.name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
@@ -143,7 +145,7 @@ export default function CommentCard({
                   )}
                   {isFromGitHub && (
                     <div className="mt-1.5 flex items-center gap-1">
-                      <Github className="size-3 text-muted-foreground" />
+                      <GithubIcon className="size-3 text-muted-foreground" />
                       <span className="text-xs text-muted-foreground">
                         {t("activity:comment.github")}
                       </span>
@@ -192,7 +194,7 @@ export default function CommentCard({
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground"
               >
-                <Github className="size-3" />
+                <GithubIcon className="size-3" />
                 {t("activity:comment.commentedOnGithub")}
               </a>
             </>

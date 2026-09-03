@@ -19,6 +19,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { useNavigate } from "@tanstack/react-router";
+import { AnimatePresence, motion } from "framer-motion";
 import { produce } from "immer";
 import { Archive, ChevronRight, Flag, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -201,12 +202,15 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
         destinationColumn.tasks.forEach((t, index) => {
           updateTask({
             ...t,
-            status: destinationColumn.id,
+            status: destinationColumn.slug,
             position: index,
           });
         });
       } else {
-        task.status = destinationColumn.id;
+        // A task's status is a column slug. The column id is only the
+        // droppable identity here, and the two are interchangeable only
+        // because the tasks endpoint happens to return `id: column.slug`.
+        task.status = destinationColumn.slug;
         const destinationIndex =
           overId === destinationColumn.id
             ? destinationColumn.tasks.length
@@ -217,7 +221,7 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
         destinationColumn.tasks.forEach((t, index) => {
           updateTask({
             ...t,
-            status: destinationColumn.id,
+            status: destinationColumn.slug,
             position: index,
           });
         });
@@ -293,7 +297,7 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
     return (
       <div
         className={cn(
-          "border-b border-border/50 transition-all duration-200 overflow-auto",
+          "border-b border-border/50 transition-colors duration-150 overflow-auto",
           showDropIndicator && "border-l-4 border-l-ring bg-accent/35",
         )}
       >
@@ -347,18 +351,27 @@ function ListView({ project, disableDragDrop = false }: ListViewProps) {
         </div>
 
         {expandedSections[column.id] && (
-          <div ref={setNodeRef} className="bg-card">
+          <div
+            ref={setNodeRef}
+            className="bg-card transition-[translate,opacity] duration-150 ease-out starting:-translate-y-1 starting:opacity-0 motion-reduce:starting:translate-y-0"
+          >
             <SortableContext
               items={column.tasks}
               strategy={verticalListSortingStrategy}
             >
-              {column.tasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  projectSlug={project?.slug ?? ""}
-                />
-              ))}
+              <AnimatePresence initial={false} mode="popLayout">
+                {column.tasks.map((task) => (
+                  <motion.div
+                    key={task.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
+                  >
+                    <TaskRow task={task} projectSlug={project?.slug ?? ""} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </SortableContext>
 
             {column.tasks.length === 0 && (

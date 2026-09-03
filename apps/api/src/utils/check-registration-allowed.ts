@@ -19,6 +19,7 @@ type RegistrationCheckResult = {
 export async function checkRegistrationAllowed(
   email?: string,
   invitationId?: string,
+  options?: { allowInvitationByEmail?: boolean },
 ): Promise<RegistrationCheckResult> {
   const isRegistrationDisabled = process.env.DISABLE_REGISTRATION === "true";
 
@@ -29,11 +30,13 @@ export async function checkRegistrationAllowed(
     };
   }
 
-  if (!invitationId && !email) {
+  const canMatchByEmail = Boolean(options?.allowInvitationByEmail && email);
+
+  if (!invitationId && !canMatchByEmail) {
     return {
       allowed: false,
       reason:
-        "Registration is currently disabled. Please contact your administrator for an invitation.",
+        "Registration is currently disabled. Please use a valid invitation link to create an account.",
     };
   }
 

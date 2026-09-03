@@ -1,25 +1,8 @@
 import { mergeAttributes, Node } from "@tiptap/core";
 import { i18n } from "@/lib/i18n";
+import { escapeHtml, isValidUrl } from "./url-safety";
 
 type EmbedMode = "embed" | "link";
-
-function isValidUrl(value: string) {
-  try {
-    // eslint-disable-next-line no-new
-    new URL(value);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-}
 
 function getEmbedSource(url: string) {
   try {
@@ -89,6 +72,14 @@ export const EmbedBlock = Node.create({
       contenteditable: "false",
     });
 
+    if (!isValidUrl(url)) {
+      return [
+        "div",
+        attrs,
+        ["span", { class: "kaneo-embed-invalid-link" }, url],
+      ];
+    }
+
     if (embedSource) {
       return [
         "div",
@@ -142,7 +133,9 @@ export const EmbedBlock = Node.create({
   ) {
     const url = String(node.attrs?.url || "");
     const mode = node.attrs?.mode === "link" ? "link" : "embed";
-    if (!isValidUrl(url)) return "";
+    if (!isValidUrl(url)) {
+      return `\n<span class="kaneo-embed-invalid-link">${escapeHtml(url)}</span>\n`;
+    }
     return `\n<kaneo-embed url="${escapeHtml(url)}" mode="${mode}" />\n`;
   },
 });

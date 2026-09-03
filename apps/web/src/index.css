@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
@@ -9,33 +11,44 @@ input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-@font-face {
-  font-family: "Cal Sans UI";
-  src: url("./assets/fonts/CalSansUI[wght,GEOM]-s.p.c2e3469d.woff2") format("woff2");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 300 700;
-}
-
-@font-face {
-  font-family: "Cal Sans Heading";
-  src: url("./assets/fonts/CalSans-SemiBold.woff2") format("woff2");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 600;
-}
-
-@font-face {
-  font-family: "Paper Mono";
-  src: url("./assets/fonts/PaperMono-Regular.woff2") format("woff2");
-  font-display: swap;
-  font-style: normal;
-  font-weight: 400;
-}
-
 @custom-variant dark (&:is(.dark *));
 
+/* Reduced motion: keep opacity feedback, drop movement (scale/translate) and
+   container morphs. Tailwind v4 scale/translate utilities use the standalone
+   CSS properties, so forcing them here neutralizes entrance/exit movement
+   while transition-property keeps the fade. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="popover-popup"],
+  [data-slot="select-popup"],
+  [data-slot="menu-popup"],
+  [data-slot="menu-sub-content"],
+  [data-slot="tooltip-popup"],
+  [data-slot="dialog-popup"],
+  [data-slot="alert-dialog-popup"],
+  [data-slot="command-dialog-popup"],
+  [data-slot="sheet-popup"],
+  [data-slot="toast-popup"] {
+    transition-property: opacity !important;
+  }
+
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"],
+  [data-slot="sidebar-group-content"],
+  [data-slot="sidebar-menu-badge"] {
+    transition: none !important;
+  }
+
+  /* dnd-kit writes the shuffle transition inline, so this needs !important. The
+     dragged element still tracks the pointer; only the reflow is neutralized. */
+  [data-kaneo-sortable] {
+    transition: none !important;
+  }
+}
+
+
 @theme inline {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --animate-skeleton: skeleton 2s -1s infinite linear;
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
@@ -94,13 +107,13 @@ input:-webkit-autofill:active {
 
 :root {
   --font-sans:
-    "Cal Sans UI",
+    "Geist Variable",
     ui-sans-serif,
     system-ui,
     sans-serif;
-  --font-heading: "Cal Sans Heading", var(--font-sans);
+  --font-heading: var(--font-sans);
   --font-mono:
-    "Paper Mono",
+    "Geist Mono Variable",
     ui-monospace,
     SFMono-Regular,
     Menlo,
@@ -647,6 +660,25 @@ input:-webkit-autofill:active {
     font-family: var(--font-mono);
     font-size: 0.85rem;
     color: var(--code-foreground);
+  }
+
+  .kaneo-mermaid-preview {
+    margin: 0.45rem 0;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 3px);
+    background: var(--code);
+    padding: 0.75rem 0.9rem;
+    overflow-x: auto;
+    text-align: center;
+  }
+
+  .kaneo-mermaid-preview svg {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .kaneo-mermaid-preview[data-state="loading"] {
+    display: none;
   }
 
   .kaneo-tiptap-content .ProseMirror blockquote {
@@ -1310,6 +1342,12 @@ input:-webkit-autofill:active {
 
   .kaneo-tiptap-content .ProseMirror ::selection {
     background: color-mix(in srgb, var(--primary) 18%, transparent);
+  }
+
+  /* Descendants too, or the cursor reverts to that of the row under it. */
+  body.kaneo-dragging,
+  body.kaneo-dragging * {
+    cursor: grabbing !important;
   }
 
 }

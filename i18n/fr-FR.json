@@ -43,7 +43,9 @@
 			"french": "Français",
 			"spanish": "Espagnol",
 			"dutch": "Néerlandais",
-			"korean": "Coréen"
+			"korean": "Coréen",
+			"chinese": "Chinois",
+			"italian": "Italien"
 		},
 		"people": {
 			"someone": "Quelqu'un",
@@ -54,7 +56,30 @@
 			"troubleshooting": "Étapes de dépannage :",
 			"tryAgain": "Réessayer",
 			"viewDeploymentGuide": "Voir le guide de déploiement",
-			"refreshPage": "Rafraîchir la page"
+			"refreshPage": "Rafraîchir la page",
+			"description": "The page crashed unexpectedly. Refreshing usually fixes it.",
+			"messages": {
+				"auth": "Authentication failed. Please sign in again.",
+				"cors": "Unable to connect to the server. This might be due to CORS configuration issues.",
+				"network": "Network error. Please check your internet connection and try again.",
+				"server": "Server error. Please try again later.",
+				"unknown": "An unexpected error occurred."
+			},
+			"troubleshootingSteps": {
+				"cors": {
+					"checkAccessibility": "Check that your API server is accessible from your browser",
+					"checkApiRunning": "Make sure your API server is running",
+					"checkApiUrl": "Check that VITE_API_URL in your frontend .env matches your API server URL",
+					"checkProtocol": "Ensure both frontend and API are using the same protocol (http/https)",
+					"verifyCorsOrigins": "Verify CORS_ORIGINS in your API .env includes your frontend URL"
+				},
+				"network": {
+					"checkConnection": "Check your internet connection",
+					"checkFirewall": "Check if there are any firewall or proxy issues",
+					"tryRefresh": "Try refreshing the page",
+					"verifyApiRunning": "Verify the API server is running and accessible"
+				}
+			}
 		},
 		"formats": {
 			"never": "Jamais"
@@ -86,6 +111,7 @@
 			},
 			"createTask": {
 				"breadcrumbTask": "TÂCHE",
+				"selectProject": "Sélectionner un projet",
 				"title": "Nouvelle tâche",
 				"description": "Créez une nouvelle tâche en fournissant un titre, une description et d'autres détails.",
 				"taskTitlePlaceholder": "Titre de la tâche",
@@ -150,7 +176,13 @@
 			"oidcError": "Échec de la connexion avec OIDC",
 			"googleError": "Échec de la connexion avec Google",
 			"githubError": "Échec de la connexion avec GitHub",
-			"discordError": "Échec de la connexion avec Discord"
+			"discordError": "Échec de la connexion avec Discord",
+			"errors": {
+				"oauth_code_verification_failed": "La vérification d'OAuth a échoué. Veuillez réessayer.",
+				"registration_is_currently_disabled_you_need_a_valid_invitation_to_create_an_account_": "L'inscription est actuellement désactivée. Vous avez besoin d'une invitation valide pour créer un compte.",
+				"account_not_linked": "Cette identité n'a pas pu être associée au compte existant. Connectez-vous par e-mail pour vérifier le compte, puis réessayez la connexion SSO. Si la connexion par e-mail n'est pas disponible, contactez votre administrateur."
+			},
+			"instanceStatusError": "Impossible de joindre le serveur. Veuillez réessayer dans un instant."
 		},
 		"providers": {
 			"google": "Google",
@@ -185,7 +217,10 @@
 			"signingIn": "Connexion...",
 			"continueAsGuest": "Continuer en tant qu'invité",
 			"toggleMessage": "Vous avez déjà un compte?",
-			"toggleLink": "Se connecter"
+			"toggleLink": "Se connecter",
+			"instanceStatusError": "Impossible de joindre le serveur. Veuillez réessayer dans un instant.",
+			"instanceAdminTitle": "Configurez votre instance Kaneo",
+			"instanceAdminSubtitle": "Ce compte devient l'administrateur de l'instance avec un accès complet."
 		},
 		"verifyOtp": {
 			"pageTitle": "Vérifier le code",
@@ -243,7 +278,8 @@
 			"joinWorkspace": "Rejoindre {{workspaceName}}",
 			"inviteBodySignedIn": "<inviter>{{inviterName}}</inviter> vous a invité à rejoindre son espace de travail.",
 			"inviteBodySignedOut": "<inviter>{{inviterName}}</inviter> vous a invité à rejoindre son espace de travail sur Kaneo.",
-			"signInToAccept": "Connectez-vous pour accepter cette invitation.",
+			"createAccountOrSignIn": "Créez un compte pour accepter cette invitation, ou connectez-vous si vous en avez déjà un.",
+			"createAccount": "Créer un compte",
 			"accepting": "Acceptation...",
 			"acceptInvitation": "Accepter l'invitation",
 			"goToDashboard": "Aller au tableau de bord",
@@ -311,13 +347,6 @@
 			"sectionTitle": "Informations sur le compte",
 			"sectionSubtitle": "Gérez votre profil et les détails de votre compte.",
 			"profilePicture": "Photo de profil",
-			"profilePictureHint": "Sans envoi de fichier, votre Gravatar (lié à cet e-mail) est affiché.",
-			"uploadAvatar": "Envoyer une image",
-			"removeAvatar": "Supprimer la photo envoyée",
-			"avatarUploadSuccess": "Photo de profil mise à jour",
-			"avatarRemoveSuccess": "Photo supprimée ; retour au Gravatar",
-			"avatarUploadError": "Échec de l’envoi de la photo",
-			"avatarRemoveError": "Échec de la suppression",
 			"fullName": "Nom complet",
 			"fullNamePlaceholder": "Entrez votre nom",
 			"email": "Email",
@@ -328,95 +357,132 @@
 				"nameRequired": "Le nom est requis",
 				"nameShort": "Le nom doit contenir au moins 2 caractères",
 				"invalidEmail": "Adresse email invalide"
+			},
+			"avatar": {
+				"hint": "PNG, JPEG, or WebP. Cropped to a square and resized to 256x256.",
+				"remove": "Remove",
+				"removeError": "Failed to remove profile picture",
+				"removeSuccess": "Profile picture removed",
+				"updateError": "Failed to update profile picture",
+				"updateSuccess": "Profile picture updated",
+				"change": "Change avatar",
+				"edit": "Change your profile picture"
+			},
+			"deleteAccount": {
+				"confirm": "Delete account",
+				"confirmLabel": "Confirm your email address",
+				"description": "Workspaces only you belong to are deleted with your account. Elsewhere, your tasks stay and become unassigned, and your comments are removed.",
+				"error": "Failed to delete account",
+				"modalDescription": "This cannot be undone. Type {{email}} to confirm.",
+				"modalTitle": "Delete your account?",
+				"sectionSubtitle": "Permanent actions that affect your whole account.",
+				"sectionTitle": "Danger zone",
+				"success": "Your account has been deleted",
+				"title": "Delete account",
+				"sessionTooOld": "For security, sign out and sign back in before deleting your account."
 			}
 		},
 		"notificationsPage": {
 			"pageTitle": "Notifications",
 			"title": "Notifications",
-			"subtitle": "Choose how Kaneo delivers your account notifications and which channels to use.",
-			"statusConnected": "Connected",
-			"statusPaused": "Paused",
+			"subtitle": "Choisissez comment Kaneo transmet les notifications de votre compte et quels canaux utiliser.",
+			"statusConnected": "Connecté",
+			"statusPaused": "En pause",
 			"emailTitle": "Email",
-			"emailDescription": "Use your account email as the destination for notifications.",
-			"accountEmailLabel": "Account email",
-			"accountEmailNoAddress": "No account email available",
-			"accountEmailHint": "Email delivery always goes to the signed-in account email.",
-			"saveChanges": "Save changes",
-			"disconnect": "Disconnect",
+			"emailDescription": "Utilisez l'email de votre compte comme destination pour les notifications.",
+			"accountEmailLabel": "Email du compte",
+			"accountEmailNoAddress": "Aucune adresse email de compte disponible",
+			"accountEmailHint": "Les emails sont toujours envoyés à l'adresse email associée au compte connecté.",
+			"saveChanges": "Enregistrer les modifications",
+			"disconnect": "Déconnecter",
 			"ntfyTitle": "ntfy",
-			"ntfyDescription": "Publish account notifications to an ntfy topic.",
-			"serverUrl": "Server URL",
-			"topic": "Topic",
-			"token": "Token",
+			"ntfyDescription": "Publier les notifications du compte sur un sujet ntfy.",
+			"serverUrl": "URL du serveur",
+			"topic": "Sujet",
+			"token": "Jeton",
 			"ntfyServerPlaceholder": "https://ntfy.example.com",
 			"ntfyTopicPlaceholder": "team-alerts",
-			"ntfyTokenPlaceholder": "Optional bearer token",
-			"ntfyTokenHintConfigured": "A token is already configured ({{masked}}). Enter a new token to replace it.",
-			"ntfyTokenHintOptional": "Optional. Provide a token if your ntfy server requires authentication.",
-			"connectNtfy": "Connect ntfy",
+			"ntfyTokenPlaceholder": "Jeton Bearer facultatif",
+			"ntfyTokenHintConfigured": "Un jeton est déjà configuré ({{masked}}). Saisissez-en un nouveau pour le remplacer.",
+			"ntfyTokenHintOptional": "Facultatif. Fournissez un jeton si votre serveur ntfy nécessite une authentification.",
+			"connectNtfy": "Connecter ntfy",
 			"gotifyTitle": "Gotify",
-			"gotifyDescription": "Send account notifications to your Gotify server.",
-			"gotifyTokenLabel": "App token",
+			"gotifyDescription": "Envoyer les notifications du compte vers votre serveur Gotify.",
+			"gotifyTokenLabel": "Jeton d'application",
 			"gotifyServerPlaceholder": "https://gotify.example.com",
-			"gotifyTokenPlaceholder": "Gotify app token",
-			"gotifyTokenHintConfigured": "An app token is already configured ({{masked}}). Enter a new token to replace it.",
-			"gotifyTokenHintRequired": "Required. Use an application token from your Gotify server.",
-			"connectGotify": "Connect Gotify",
-			"webhookTitle": "Custom webhook",
-			"webhookDescription": "Send account notifications to your own endpoint as JSON.",
-			"endpointUrl": "Endpoint URL",
-			"signingSecret": "Signing secret",
+			"gotifyTokenPlaceholder": "Jeton d'application Gotify",
+			"gotifyTokenHintConfigured": "Un jeton d'application est déjà configuré ({{masked}}). Saisissez-en un nouveau pour le remplacer.",
+			"gotifyTokenHintRequired": "Obligatoire. Utilisez un jeton d'application provenant de votre serveur Gotify.",
+			"connectGotify": "Connecter Gotify",
+			"webhookTitle": "Webhook personnalisé",
+			"webhookDescription": "Envoyer les notifications du compte vers votre propre point de terminaison au format JSON.",
+			"endpointUrl": "URL du point de terminaison",
+			"signingSecret": "Secret de signature",
 			"webhookUrlPlaceholder": "https://example.com/webhooks/kaneo",
-			"webhookSecretPlaceholder": "Optional shared secret",
-			"webhookSecretHintConfigured": "A signing secret is already configured ({{masked}}). Enter a new one to replace it.",
-			"webhookSecretHintOptional": "Optional. Kaneo signs the request body when a secret is set.",
-			"connectWebhook": "Connect webhook",
-			"workspaceRulesTitle": "Workspace delivery rules",
-			"workspaceRulesDescription": "Reuse your global channels, then decide which workspaces and projects are allowed to send account notifications.",
-			"workspaceCardHint": "Choose which channels this workspace can use for account notifications.",
+			"webhookSecretPlaceholder": "Secret partagé facultatif",
+			"webhookSecretHintConfigured": "Un secret de signature est déjà configuré ({{masked}}). Saisissez-en un nouveau pour le remplacer.",
+			"webhookSecretHintOptional": "Facultatif. Kaneo signe le corps de la requête lorsqu'un secret est défini.",
+			"connectWebhook": "Connecter le webhook",
+			"workspaceRulesTitle": "Règles d'envoi par espace de travail",
+			"workspaceRulesDescription": "Réutilisez vos canaux globaux, puis choisissez quels espaces de travail et projets sont autorisés à envoyer des notifications de compte.",
+			"workspaceCardHint": "Choisissez quels canaux cet espace de travail peut utiliser pour les notifications du compte.",
 			"workspaceCardLabelEmail": "Email",
 			"workspaceCardLabelNtfy": "ntfy",
 			"workspaceCardLabelGotify": "Gotify",
-			"workspaceCardLabelWebhook": "Custom webhook",
-			"emailChannelHintEnabled": "Send matching workspace notifications by email.",
-			"emailChannelHintDisabled": "Configure and enable email globally first.",
-			"ntfyChannelHintEnabled": "Send matching workspace notifications to ntfy.",
-			"ntfyChannelHintDisabled": "Configure and enable ntfy globally first.",
-			"gotifyChannelHintEnabled": "Send matching workspace notifications to Gotify.",
-			"gotifyChannelHintDisabled": "Configure and enable Gotify globally first.",
-			"webhookChannelHintEnabled": "Send matching workspace notifications to your webhook.",
-			"webhookChannelHintDisabled": "Configure and enable the webhook globally first.",
-			"projectScope": "Project scope",
-			"projectScopeDescription": "All projects are included by default. Narrow it down if this workspace should only send notifications from selected projects.",
-			"allProjects": "All projects",
-			"allProjectsDescription": "Deliver notifications from every project in this workspace.",
-			"selectedProjects": "Selected projects",
-			"selectedProjectsDescription": "Only deliver notifications from chosen projects.",
-			"noProjectsInWorkspace": "No projects available for this workspace yet.",
-			"createRule": "Create rule",
-			"removeRule": "Remove rule",
-			"toastEmailSaved": "Email notification settings saved",
-			"toastEmailSaveFailed": "Failed to save email settings",
-			"toastNtfySaved": "ntfy settings saved",
-			"toastNtfySaveFailed": "Failed to save ntfy settings",
-			"toastNtfyDisconnected": "ntfy disconnected",
-			"toastNtfyDisconnectFailed": "Failed to disconnect ntfy",
-			"toastGotifySaved": "Gotify settings saved",
-			"toastGotifySaveFailed": "Failed to save Gotify settings",
-			"toastGotifyDisconnected": "Gotify disconnected",
-			"toastGotifyDisconnectFailed": "Failed to disconnect Gotify",
-			"toastWebhookSaved": "Webhook settings saved",
-			"toastWebhookSaveFailed": "Failed to save webhook settings",
-			"toastWebhookDisconnected": "Webhook disconnected",
-			"toastWebhookDisconnectFailed": "Failed to disconnect webhook",
-			"toastRuleSaved": "Saved notification rule for {{workspaceName}}",
-			"toastRuleSaveFailed": "Failed to save workspace notification rule",
-			"toastRuleRemoved": "Removed notification rule for {{workspaceName}}",
-			"toastRuleRemoveFailed": "Failed to remove workspace notification rule",
-			"toastPreferencesSaved": "Notification preferences saved",
-			"toastPreferencesSaveFailed": "Failed to save notification preferences",
-			"toastRuleSavedGeneric": "Workspace notification rule saved",
-			"toastRuleRemovedGeneric": "Workspace notification rule removed"
+			"workspaceCardLabelWebhook": "Webhook",
+			"emailChannelHintEnabled": "Envoyer les notifications correspondantes de cet espace de travail par email.",
+			"emailChannelHintDisabled": "Configurez et activez d'abord l'email au niveau global.",
+			"ntfyChannelHintEnabled": "Envoyer les notifications correspondantes de cet espace de travail vers ntfy.",
+			"ntfyChannelHintDisabled": "Configurez et activez d'abord ntfy au niveau global.",
+			"gotifyChannelHintEnabled": "Envoyer les notifications correspondantes de cet espace de travail vers Gotify.",
+			"gotifyChannelHintDisabled": "Configurez et activez d'abord Gotify au niveau global.",
+			"webhookChannelHintEnabled": "Envoyer les notifications correspondantes de cet espace de travail vers votre webhook.",
+			"webhookChannelHintDisabled": "Configurez et activez d'abord le webhook au niveau global.",
+			"projectScope": "Portée des projets",
+			"projectScopeDescription": "Tous les projets sont inclus par défaut. Limitez la portée si cet espace de travail ne doit envoyer des notifications que pour certains projets.",
+			"allProjects": "Tous les projets",
+			"allProjectsDescription": "Envoyer les notifications de tous les projets de cet espace de travail.",
+			"selectedProjects": "Projets sélectionnés",
+			"selectedProjectsDescription": "N'envoyer les notifications que pour les projets choisis.",
+			"noProjectsInWorkspace": "Aucun projet n'est encore disponible dans cet espace de travail.",
+			"createRule": "Créer une règle",
+			"removeRule": "Supprimer la règle",
+			"toastEmailSaved": "Paramètres des notifications par email enregistrés",
+			"toastEmailSaveFailed": "Échec de l'enregistrement des paramètres email",
+			"toastNtfySaved": "Paramètres ntfy enregistrés",
+			"toastNtfySaveFailed": "Échec de l'enregistrement des paramètres ntfy",
+			"toastNtfyDisconnected": "ntfy déconnecté",
+			"toastNtfyDisconnectFailed": "Échec de la déconnexion de ntfy",
+			"toastGotifySaved": "Paramètres Gotify enregistrés",
+			"toastGotifySaveFailed": "Échec de l'enregistrement des paramètres Gotify",
+			"toastGotifyDisconnected": "Gotify déconnecté",
+			"toastGotifyDisconnectFailed": "Échec de la déconnexion de Gotify",
+			"toastWebhookSaved": "Paramètres du webhook enregistrés",
+			"toastWebhookSaveFailed": "Échec de l'enregistrement des paramètres du webhook",
+			"toastWebhookDisconnected": "Webhook déconnecté",
+			"toastWebhookDisconnectFailed": "Échec de la déconnexion du webhook",
+			"toastRuleSaved": "Règle de notification enregistrée pour {{workspaceName}}",
+			"toastRuleSaveFailed": "Échec de l'enregistrement de la règle de notification de l'espace de travail",
+			"toastRuleRemoved": "Règle de notification supprimée pour {{workspaceName}}",
+			"toastRuleRemoveFailed": "Échec de la suppression de la règle de notification de l'espace de travail",
+			"toastPreferencesSaved": "Préférences de notification enregistrées",
+			"toastPreferencesSaveFailed": "Échec de l'enregistrement des préférences de notification",
+			"toastRuleSavedGeneric": "Règle de notification de l'espace de travail enregistrée",
+			"toastRuleRemovedGeneric": "Règle de notification de l'espace de travail supprimée",
+			"workspaceEnabledLabel": "Activer les notifications pour {{workspaceName}}",
+			"eventPreferencesTitle": "Me notifier pour",
+			"eventPreferencesDescription": "Choisissez quels événements de tâche créent des notifications dans l'application et peuvent être envoyés à vos canaux connectés.",
+			"eventTaskAssignments": "Assignations de tâches",
+			"eventComments": "Commentaires et mentions",
+			"eventCommentsHint": "Inclut les nouveaux commentaires sur les tâches qui vous sont assignées et les @mentions directes.",
+			"eventStatusChanges": "Changements de statut des tâches",
+			"eventDueDateReminders": "Rappels d'échéance",
+			"reminderLeadTimeLabel": "Me rappeler avant la date d'échéance",
+			"reminderLeadTimeHint": "Entre 1 heure et 30 jours avant. Les notifications de retard sont envoyées séparément.",
+			"reminderLeadTimeUnitHours": "Heures",
+			"reminderLeadTimeUnitDays": "Jours",
+			"reminderLeadTimeInvalid": "Entrez un nombre entier entre 1 et {{max}}.",
+			"saveEventPreferences": "Enregistrer les types de notification"
 		},
 		"preferencesPage": {
 			"title": "Préférences",
@@ -433,10 +499,11 @@
 			"languageDescription": "Choisissez la langue de l'interface",
 			"selectLanguage": "Sélectionnez une langue",
 			"firstDayOfWeek": "Premier jour de la semaine",
-			"firstDayOfWeekDescription": "Choisissez si les calendriers et les semaines commencent le dimanche ou le lundi",
+			"firstDayOfWeekDescription": "Choisissez le jour où commencent les calendriers et les semaines",
 			"selectFirstDayOfWeek": "Sélectionnez le premier jour",
 			"weekStartsOnSunday": "Dimanche",
 			"weekStartsOnMonday": "Lundi",
+			"weekStartsOnSaturday": "Samedi",
 			"defaultView": "Vue par défaut",
 			"defaultViewDescription": "Choisissez votre mode d'affichage des tâches préféré",
 			"selectViewMode": "Sélectionnez un mode d'affichage",
@@ -550,6 +617,21 @@
 			"validation": {
 				"nameRequired": "Le nom de l'espace de travail est requis",
 				"nameShort": "Le nom de l'espace de travail doit contenir au moins 2 caractères"
+			},
+			"transferOwnership": {
+				"toastSuccess": "Propriété transférée",
+				"toastError": "Échec du transfert de propriété",
+				"title": "Transférer la propriété",
+				"subtitle": "Confiez cet espace de travail à un autre membre. Vous serez rétrogradé au rôle d'admin et perdrez les capacités réservées au propriétaire.",
+				"pickerLabel": "Nouveau propriétaire",
+				"noEligibleMembers": "Invitez au moins un autre membre avant de pouvoir transférer la propriété.",
+				"pickerHint": "Il deviendra l'unique propriétaire de cet espace de travail.",
+				"pickerPlaceholder": "Sélectionnez un membre",
+				"button": "Transférer",
+				"dialogTitle": "Transférer la propriété ?",
+				"dialogDescription": "{{name}} deviendra l'unique propriétaire de {{workspace}}. Vous conserverez l'accès admin mais perdrez les capacités réservées au propriétaire, comme supprimer l'espace de travail ou le transférer à nouveau.",
+				"transferring": "Transfert…",
+				"confirm": "Transférer la propriété"
 			}
 		},
 		"projectGeneral": {
@@ -584,9 +666,7 @@
 			"toastDeleteError": "Échec de la suppression du projet",
 			"validation": {
 				"nameRequired": "Le nom du projet est requis",
-				"nameShort": "Le nom du projet doit contenir au moins 2 caractères",
 				"keyRequired": "La clé est requise",
-				"keyShort": "La clé doit contenir au moins 2 caractères",
 				"keyMax": "La clé doit contenir au plus 8 caractères",
 				"iconRequired": "L'icône est requise"
 			},
@@ -646,12 +726,12 @@
 			"toastFinalOn": "Colonne marquée comme terminée",
 			"toastFinalOff": "La colonne n'est plus marquée comme terminée",
 			"toastUpdateError": "Échec de la mise à jour de la colonne",
-			"toastIconUpdated": "Column icon updated",
+			"toastIconUpdated": "Icône de la colonne mise à jour",
 			"toastDeleted": "Colonne supprimée",
 			"toastDeleteError": "Échec de la suppression de la colonne",
 			"loading": "Chargement des colonnes...",
-			"pickIconTitle": "Pick column icon",
-			"searchIconsPlaceholder": "Search icons...",
+			"pickIconTitle": "Choisir l'icône de la colonne",
+			"searchIconsPlaceholder": "Rechercher des icônes...",
 			"doneColumnTooltip": "Considérer ceci comme une colonne terminée",
 			"doneColumn": "Colonne terminée",
 			"markDoneAria": "Marquer {{name}} comme colonne terminée",
@@ -701,10 +781,10 @@
 			"statusNotInstalled": "Non installé",
 			"ownerLabel": "Propriétaire du dépôt",
 			"ownerHint": "Nom d'utilisateur ou organisation GitHub",
-			"ownerPlaceholder": "e.g., octocat",
+			"ownerPlaceholder": "ex. octocat",
 			"repoNameLabel": "Nom du dépôt",
 			"repoNameHint": "Le nom du dépôt",
-			"repoNamePlaceholder": "e.g., my-project",
+			"repoNamePlaceholder": "ex. mon-projet",
 			"actionsTitle": "Actions",
 			"actionsHint": "Gérer la connexion de votre dépôt",
 			"browse": "Parcourir",
@@ -723,76 +803,78 @@
 		},
 		"giteaIntegration": {
 			"validation": {
-				"baseUrlRequired": "Gitea base URL is required",
-				"baseUrlInvalid": "Enter a valid URL (e.g. https://gitea.example.com)",
-				"ownerRequired": "Repository owner is required",
-				"ownerInvalid": "Invalid repository owner format",
-				"nameRequired": "Repository name is required",
-				"nameInvalid": "Invalid repository name format"
+				"baseUrlRequired": "L'URL de base Gitea est requise",
+				"baseUrlInvalid": "Entrez une URL valide (ex. https://gitea.example.com)",
+				"ownerRequired": "Le propriétaire du dépôt est requis",
+				"ownerInvalid": "Format de propriétaire de dépôt invalide",
+				"nameRequired": "Le nom du dépôt est requis",
+				"nameInvalid": "Format de nom de dépôt invalide"
 			},
 			"toast": {
-				"verifyOk": "Gitea token can access this repository",
-				"verifyWarning": "Check token permissions or repository access",
-				"repoNotFound": "Repository not found or not accessible",
-				"verifyError": "Failed to verify Gitea access",
-				"tokenRequired": "Personal access token is required",
-				"tokenRequiredVerify": "Enter a token to verify",
-				"verifyFirst": "Verify access failed — check URL, token, and repository",
-				"updated": "Gitea integration saved",
-				"updateError": "Failed to save Gitea integration",
-				"removed": "Gitea integration removed",
-				"removeError": "Failed to remove Gitea integration",
-				"issuesImported": "Issues imported successfully",
-				"importError": "Failed to import issues",
-				"commentOnEnabled": "Kaneo will comment with a task link on new issues",
-				"commentOnDisabled": "Task link comments on new issues are turned off",
-				"settingsUpdateError": "Failed to update Gitea integration",
+				"verifyOk": "Le jeton Gitea peut accéder à ce dépôt",
+				"verifyWarning": "Vérifiez les permissions du jeton ou l'accès au dépôt",
+				"repoNotFound": "Dépôt non trouvé ou inaccessible",
+				"verifyError": "Échec de la vérification de l'accès Gitea",
+				"tokenRequired": "Le jeton d'accès personnel est requis",
+				"tokenRequiredVerify": "Entrez un jeton pour vérifier",
+				"verifyFirst": "Échec de la vérification de l'accès. Vérifiez l'URL, le jeton et le dépôt",
+				"updated": "Intégration Gitea enregistrée",
+				"updateError": "Échec de l'enregistrement de l'intégration Gitea",
+				"removed": "Intégration Gitea supprimée",
+				"removeError": "Échec de la suppression de l'intégration Gitea",
+				"issuesImported": "Issues importées avec succès",
+				"importError": "Échec de l'importation des issues",
+				"commentOnEnabled": "Kaneo commentera les nouvelles issues avec un lien vers la tâche",
+				"commentOnDisabled": "Les commentaires de lien de tâche sur les nouvelles issues sont désactivés",
+				"settingsUpdateError": "Échec de la mise à jour de l'intégration Gitea",
 				"secretCopied": "Copied",
-				"unableToCopySecret": "Unable to copy secret"
+				"unableToCopySecret": "Impossible de copier le secret",
+				"notGiteaInstance": "L'URL ne pointe pas vers une instance Gitea",
+				"redirected": "L'URL Gitea a été redirigée (généralement vers HTTPS). Utilisez directement l'URL finale."
 			},
 			"webhookShow": "Show",
 			"webhookHide": "Hide",
 			"webhookCopy": "Copy",
-			"connectionStatus": "Connection status",
-			"connectedActive": "Repository connected and active",
-			"notConnectedHint": "No Gitea repository connected",
+			"connectionStatus": "Statut de la connexion",
+			"connectedActive": "Dépôt connecté et actif",
+			"notConnectedHint": "Aucun dépôt Gitea connecté",
 			"badgeConnected": "Connected",
-			"badgeNotConnected": "Not connected",
+			"badgeNotConnected": "Non connecté",
 			"repository": "Repository",
-			"repositoryHint": "Linked Gitea repository",
-			"commentTaskLinkTitle": "Comment Kaneo link on new issues",
-			"commentTaskLinkHint": "When enabled, Kaneo posts a comment on each new issue with a link to the task.",
+			"repositoryHint": "Dépôt Gitea lié",
+			"commentTaskLinkTitle": "Commenter le lien Kaneo sur les nouvelles issues",
+			"commentTaskLinkHint": "Lorsque cette option est activée, Kaneo publie un commentaire sur chaque nouvelle issue avec un lien vers la tâche.",
 			"webhookTitle": "Webhook",
-			"webhookHint": "In your Gitea repository, add a webhook with this URL and secret. Enable push, pull request, issues, issue comments, and create (for labels).",
-			"webhookSecretLabel": "Secret (must match the webhook secret in Gitea)",
+			"webhookHint": "Dans votre dépôt Gitea, ajoutez un webhook avec cette URL et ce secret. Activez push, pull request, issues, commentaires d'issues et create (pour les labels).",
+			"webhookSecretLabel": "Secret (doit correspondre au secret du webhook dans Gitea)",
 			"baseUrlLabel": "Gitea URL",
-			"baseUrlHint": "Root URL of your Gitea instance",
-			"tokenLabel": "Personal access token",
-			"tokenHint": "Token with repo and issues access",
+			"baseUrlHint": "URL racine de votre instance Gitea",
+			"tokenLabel": "Jeton d'accès personnel",
+			"tokenHint": "Jeton avec accès aux dépôts et aux issues",
 			"tokenPlaceholder": "Paste token",
-			"tokenPlaceholderUpdate": "Paste new token to rotate",
+			"tokenPlaceholderUpdate": "Collez un nouveau jeton pour le remplacer",
 			"currentToken": "stored",
 			"ownerLabel": "Owner",
-			"ownerHint": "User or organization name",
-			"repoNameLabel": "Repository name",
-			"repoNameHint": "Repository name only (no owner)",
+			"ownerHint": "Nom d'utilisateur ou d'organisation",
+			"repoNameLabel": "Nom du dépôt",
+			"repoNameHint": "Nom du dépôt uniquement (sans le propriétaire)",
 			"actionsTitle": "Actions",
-			"actionsHint": "Verify access and connect",
+			"actionsHint": "Vérifier l'accès et connecter",
 			"browse": "Browse",
 			"verify": "Verify",
 			"update": "Update",
 			"connect": "Connect",
 			"disconnect": "Disconnect",
-			"importSectionTitle": "Import Gitea issues",
-			"importSectionHint": "Import open issues and pull requests from the repository",
+			"importSectionTitle": "Importer des issues Gitea",
+			"importSectionHint": "Importez les issues ouvertes et les pull requests depuis le dépôt",
 			"importing": "Importing…",
-			"importIssues": "Import issues",
-			"importDisabledHint": "Verify the repository above to enable importing",
-			"browseModalTitle": "Your repositories",
-			"browseModalHint": "Repositories your token can access",
+			"importIssues": "Importer les issues",
+			"importDisabledHint": "Vérifiez le dépôt ci-dessus pour activer l'importation",
+			"browseModalTitle": "Vos dépôts",
+			"browseModalHint": "Dépôts accessibles avec votre jeton",
 			"searchRepos": "Search…",
-			"browseNeedsCredentials": "Enter Gitea URL and token to browse",
-			"loadingRepos": "Loading repositories…",
+			"browseNeedsCredentials": "Entrez l'URL Gitea et le jeton pour parcourir",
+			"loadingRepos": "Chargement des dépôts…",
 			"retry": "Retry"
 		},
 		"slackIntegration": {
@@ -903,11 +985,18 @@
 				"taskPriorityChanged": "Changements de priorité",
 				"taskTitleChanged": "Changements de titre",
 				"taskDescriptionChanged": "Changements de description",
-				"taskCommentCreated": "Nouveaux commentaires"
+				"taskCommentCreated": "Nouveaux commentaires",
+				"taskDeleted": "Tâche supprimée",
+				"taskMoved": "Tâche déplacée",
+				"taskDueDateChanged": "Date d'échéance modifiée",
+				"taskAssigneeChanged": "Assigné modifié",
+				"taskUnassigned": "Tâche désassignée",
+				"dueDateReminder": "Rappels d'échéance"
 			},
 			"connect": "Connecter le webhook",
 			"saveChanges": "Enregistrer les modifications",
-			"disconnect": "Déconnecter"
+			"disconnect": "Déconnecter",
+			"reminderLeadTimeLabel": "Nombre d'heures avant l'échéance pour l'envoi du webhook"
 		},
 		"telegramIntegration": {
 			"validation": {
@@ -998,6 +1087,8 @@
 			"createColumnsFirst": "Créez des colonnes d'abord pour configurer les règles d'automatisation.",
 			"githubHeading": "GitHub",
 			"githubHint": "Lorsqu'un événement GitHub se produit, déplacez la tâche liée vers une colonne.",
+			"giteaHeading": "Gitea",
+			"giteaHint": "Lorsqu'un événement Gitea se produit, déplacez la tâche liée vers une colonne.",
 			"selectColumnPlaceholder": "Sélectionner une colonne...",
 			"toastUpdated": "Règle de workflow mise à jour",
 			"toastError": "Échec de la mise à jour de la règle",
@@ -1016,6 +1107,169 @@
 			"merged": "Fusionné",
 			"draft": "Brouillon",
 			"open": "Ouvert"
+		},
+		"workspaceRoles": {
+			"pageTitle": "Rôles",
+			"title": "Rôles",
+			"subtitle": "Définissez les actions que les membres peuvent effectuer dans {{workspaceName}}.",
+			"thisWorkspace": "cet espace de travail",
+			"noAccess": "Vous devez disposer de permissions admin ou propriétaire pour gérer les rôles de l'espace de travail.",
+			"sectionTitle": "Rôles de l'espace de travail",
+			"sectionSubtitle": "Modifiez les rôles par défaut ou ajoutez-en un sur mesure. Les membres conservent le nom de leur rôle assigné après modification.",
+			"newRole": "Nouveau rôle",
+			"loading": "Chargement…",
+			"loadError": "Échec du chargement des rôles.",
+			"emptyTitle": "Aucun rôle pour le moment",
+			"emptyDescription": "Les rôles par défaut apparaîtront ici une fois initialisés pour cet espace de travail.",
+			"defaultBadge": "Par défaut",
+			"permissionCount_one": "{{count}} permission",
+			"permissionCount_other": "{{count}} permissions",
+			"nameLabel": "Nom",
+			"nameHint": "En minuscules. Ne peut pas être modifié ultérieurement.",
+			"namePlaceholder": "ex. relecteur",
+			"discard": "Abandonner",
+			"createRole": "Créer le rôle",
+			"deleteRole": "Supprimer le rôle",
+			"defaultRoleHelp": "Rôle par défaut : le nom est réservé et la ligne ne peut pas être supprimée.",
+			"unsavedChanges": "Vous avez des modifications non enregistrées",
+			"allChangesSaved": "Toutes les modifications sont enregistrées",
+			"saveChanges": "Enregistrer les modifications",
+			"defaultRoleDescriptions": {
+				"viewer": "Peut voir et commenter les tâches.",
+				"member": "Peut créer et gérer les tâches et les projets.",
+				"admin": "A un accès complet à l'espace de travail."
+			},
+			"resources": {
+				"project": "Projets",
+				"task": "Tâches",
+				"label": "Labels",
+				"workspace": "Espace de travail"
+			},
+			"permissions": {
+				"project": {
+					"create": {
+						"label": "Créer",
+						"description": "Peut créer de nouveaux projets"
+					},
+					"read": {
+						"label": "Lire",
+						"description": "Peut voir les projets"
+					},
+					"update": {
+						"label": "Modifier",
+						"description": "Peut modifier les paramètres du projet"
+					},
+					"delete": {
+						"label": "Supprimer",
+						"description": "Peut supprimer des projets"
+					},
+					"share": {
+						"label": "Partager",
+						"description": "Peut partager des projets"
+					}
+				},
+				"task": {
+					"create": {
+						"label": "Créer",
+						"description": "Peut créer des tâches"
+					},
+					"read": {
+						"label": "Lire",
+						"description": "Peut voir les tâches"
+					},
+					"update": {
+						"label": "Modifier",
+						"description": "Peut modifier les tâches"
+					},
+					"delete": {
+						"label": "Supprimer",
+						"description": "Peut supprimer des tâches"
+					},
+					"assign": {
+						"label": "Assigner",
+						"description": "Peut assigner des tâches aux membres"
+					}
+				},
+				"label": {
+					"create": {
+						"label": "Créer",
+						"description": "Peut créer des labels"
+					},
+					"read": {
+						"label": "Lire",
+						"description": "Peut voir les labels"
+					},
+					"update": {
+						"label": "Modifier",
+						"description": "Peut modifier les labels"
+					},
+					"delete": {
+						"label": "Supprimer",
+						"description": "Peut supprimer des labels"
+					}
+				},
+				"workspace": {
+					"read": {
+						"label": "Lire",
+						"description": "Peut voir les paramètres de l'espace de travail"
+					},
+					"update": {
+						"label": "Modifier",
+						"description": "Peut mettre à jour les paramètres de l'espace de travail"
+					},
+					"delete": {
+						"label": "Supprimer",
+						"description": "Peut supprimer l'espace de travail"
+					},
+					"manage_settings": {
+						"label": "Gérer les paramètres",
+						"description": "Peut gérer les paramètres de l'espace de travail"
+					}
+				}
+			},
+			"validation": {
+				"nameRequired": "Le nom du rôle est requis",
+				"nameExists": "Un rôle avec ce nom existe déjà",
+				"permissionRequired": "Au moins une permission doit être sélectionnée"
+			},
+			"toast": {
+				"created": "Rôle créé",
+				"createError": "Échec de la création du rôle",
+				"updated": "Rôle mis à jour",
+				"updateError": "Échec de la mise à jour du rôle",
+				"deleted": "Rôle supprimé",
+				"deleteError": "Échec de la suppression du rôle"
+			},
+			"deleteDialog": {
+				"title": "Supprimer le rôle",
+				"description": "Cela supprimera définitivement le rôle \"{{role}}\". Les membres assignés à ce rôle perdront ses permissions."
+			},
+			"permissionCount_many": "{{count}} permissions"
+		},
+		"workspaceLabels": {
+			"pageTitle": "Paramètres des labels",
+			"title": "Labels",
+			"subtitle": "Créez, modifiez et supprimez des labels au niveau de l'espace de travail.",
+			"cardDescription": "Gérez les labels pouvant être assignés aux tâches.",
+			"createLabel": "Créer un label",
+			"editLabel": "Modifier le label",
+			"deleteLabel": "Supprimer",
+			"saveLabel": "Enregistrer",
+			"nameLabel": "Nom du label",
+			"namePlaceholder": "Entrez le nom du label",
+			"colorLabel": "Couleur",
+			"createDescription": "Créez un nouveau label utilisable dans les tâches de cet espace de travail.",
+			"editDescription": "Mettez à jour le nom ou la couleur de ce label.",
+			"deleteConfirmTitle": "Supprimer ce label ?",
+			"deleteConfirmDescription": "Cela supprimera définitivement ce label de toutes les tâches. Cette action ne peut pas être annulée.",
+			"empty": "Aucun label pour le moment. Créez votre premier label pour commencer.",
+			"createSuccess": "Label créé",
+			"updateSuccess": "Label mis à jour",
+			"deleteSuccess": "Label supprimé",
+			"createError": "Échec de la création du label",
+			"updateError": "Échec de la mise à jour du label",
+			"deleteError": "Échec de la suppression du label",
+			"nameRequired": "Le nom du label est requis"
 		}
 	},
 	"navigation": {
@@ -1127,7 +1381,8 @@
 				"nextTask": "Tâche suivante",
 				"prevTask": "Tâche précédente",
 				"openTask": "Ouvrir la tâche sélectionnée",
-				"quickSelectNumber": "Sélectionner une option par numéro"
+				"quickSelectNumber": "Sélectionner une option par numéro",
+				"calendarView": "Switch to calendar view"
 			}
 		}
 	},
@@ -1157,15 +1412,43 @@
 				"content": "Le statut de la tâche \"{{taskTitle}}\" est passé de \"{{oldStatus}}\" à \"{{newStatus}}\""
 			},
 			"task_assignee_changed": {
-				"title": "Tâche assignée à vous",
+				"title": "Une tâche vous est assignée",
 				"content": "Vous avez été assigné à la tâche : {{taskTitle}}"
+			},
+			"task_mention": {
+				"title": "{{mentionerName}} vous a mentionné",
+				"content": "{{mentionerName}} vous a mentionné dans : {{taskTitle}}"
 			},
 			"time_entry_created": {
 				"title": "Suivi du temps démarré",
 				"contentWithTask": "Le suivi du temps a démarré sur la tâche : {{taskTitle}}",
 				"contentWithoutTask": "Le suivi du temps a démarré sur une tâche"
+			},
+			"task_comment": {
+				"title": "{{commenterName}} a commenté votre tâche",
+				"content": "Nouveau commentaire sur {{taskTitle}} : {{commentPreview}}"
+			},
+			"due_date_reminder": {
+				"title": "Échéance proche",
+				"content": "{{taskTitle}} arrive à échéance dans {{leadTime}}"
+			},
+			"task_overdue": {
+				"title": "Tâche en retard",
+				"content": "{{taskTitle}} a dépassé sa date d'échéance"
 			}
-		}
+		},
+		"reminderLeadTime": {
+			"minutes_one": "{{count}} minute",
+			"minutes_other": "{{count}} minutes",
+			"hours_one": "{{count}} heure",
+			"hours_other": "{{count}} heures",
+			"days_one": "{{count}} jour",
+			"days_other": "{{count}} jours",
+			"minutes_many": "{{count}} minutes",
+			"days_many": "{{count}} jours",
+			"hours_many": "{{count}} heures"
+		},
+		"newCount_many": "{{count}} nouvelles"
 	},
 	"activity": {
 		"assignedToSelf": "s'est assigné la tâche",
@@ -1195,7 +1478,7 @@
 		},
 		"comment": {
 			"github": "GitHub",
-			"viewGithubProfile": "View GitHub Profile",
+			"viewGithubProfile": "Voir le profil GitHub",
 			"commentedOnGithub": "a commenté sur GitHub",
 			"cannotBeEmpty": "Le commentaire ne peut pas être vide",
 			"mustBeLoggedInToEdit": "Vous devez être connecté pour modifier les commentaires",
@@ -1269,6 +1552,7 @@
 					"java": "Java",
 					"javascript": "JavaScript",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"plaintext": "Plaintext",
 					"python": "Python",
 					"rust": "Rust",
@@ -1276,6 +1560,18 @@
 					"swift": "Swift",
 					"typescript": "TypeScript",
 					"yaml": "YAML"
+				},
+				"table": {
+					"addColumnBefore": "Insérer une colonne à gauche",
+					"addColumnAfter": "Insérer une colonne à droite",
+					"deleteColumn": "Supprimer la colonne",
+					"addRowBefore": "Insérer une ligne au-dessus",
+					"addRowAfter": "Insérer une ligne en dessous",
+					"deleteRow": "Supprimer la ligne",
+					"deleteTable": "Supprimer le tableau"
+				},
+				"mermaid": {
+					"renderFailed": "Impossible d'afficher le diagramme Mermaid"
 				}
 			}
 		}
@@ -1393,6 +1689,7 @@
 					"kotlin": "Kotlin",
 					"makefile": "Makefile",
 					"markdown": "Markdown",
+					"mermaid": "Mermaid",
 					"ocaml": "OCaml",
 					"php": "PHP",
 					"perl": "Perl",
@@ -1424,6 +1721,9 @@
 						"onlyYoutube": "Seuls les liens YouTube peuvent être intégrés."
 					},
 					"onlyYoutubeInline": "Seuls les liens YouTube peuvent être intégrés. Utilisez le mode lien à la place."
+				},
+				"mermaid": {
+					"renderFailed": "Impossible d'afficher le diagramme Mermaid"
 				}
 			}
 		},
@@ -1439,11 +1739,12 @@
 			"noTasksFound": "Aucune tâche trouvée",
 			"openTask": "Ouvrir la tâche",
 			"removeRelation": "Supprimer la relation",
-			"related": "Related",
-			"blocks": "Blocks",
-			"selectTask": "Select a task to link",
+			"related": "Liée",
+			"blocks": "Bloquée",
+			"selectTask": "Sélectionnez une tâche à lier",
 			"types": {
-				"blocks": "blocs",
+				"blocks": "bloqué",
+				"blocked_by": "bloqué par",
 				"related": "relatif à"
 			}
 		},
@@ -1457,7 +1758,8 @@
 			"deleteError": "Échec de la suppression de la tâche",
 			"deleteDialogTitle": "Supprimer la tâche ?",
 			"deleteDialogDescription": "Cela supprimera définitivement la tâche et toutes ses données. Vous ne pouvez pas annuler cette action.",
-			"deleteAction": "Supprimer la tâche"
+			"deleteAction": "Supprimer la tâche",
+			"completeAria": "Marquer la sous-tâche comme terminée"
 		},
 		"properties": {
 			"title": "Propriétés",
@@ -1543,7 +1845,7 @@
 				"priority": "Priorité: {{name}}",
 				"assignee": "Assigné: {{name}}",
 				"due": "Échéance: {{date}}",
-				"label": "Label: {{name}}",
+				"label": "Label : {{name}}",
 				"dueThisWeek": "Échéance cette semaine",
 				"dueNextWeek": "Échéance la semaine prochaine",
 				"noDueDate": "Pas de date d'échéance"
@@ -1585,7 +1887,7 @@
 			}
 		},
 		"gantt": {
-			"pageTitle": "{{name}} — Gantt",
+			"pageTitle": "{{name}} – Gantt",
 			"title": "Chronologie de Gantt",
 			"searchPlaceholder": "Rechercher des tâches planifiées...",
 			"hideTasks": "Masquer les tâches",
@@ -1598,7 +1900,7 @@
 			"updateDatesError": "Échec de la mise à jour des dates de la tâche",
 			"resizeStart": "Redimensionner la date de début",
 			"resizeDue": "Redimensionner la date d'échéance",
-			"taskAriaLabel": "{{title}} — ouvrir ou déplacer"
+			"taskAriaLabel": "{{title}} : ouvrir ou déplacer"
 		},
 		"delete": {
 			"title": "Supprimer la tâche ?",
@@ -1624,7 +1926,8 @@
 			"open": "Ouvert",
 			"label": "Pull Request",
 			"count_one": "{{count}} PR",
-			"count_other": "{{count}} PRs"
+			"count_other": "{{count}} PR",
+			"count_many": "{{count}} PR"
 		},
 		"assignee": {
 			"label": "Assigné",
@@ -1686,9 +1989,43 @@
 			"searchActions": "Rechercher des actions...",
 			"noActionsFound": "Aucune action trouvée.",
 			"changeStatus": "Changer le statut"
+		},
+		"editor": {
+			"table": {
+				"addColumnBefore": "Insérer une colonne à gauche",
+				"addColumnAfter": "Insérer une colonne à droite",
+				"deleteColumn": "Supprimer la colonne",
+				"addRowBefore": "Insérer une ligne au-dessus",
+				"addRowAfter": "Insérer une ligne en dessous",
+				"deleteRow": "Supprimer la ligne",
+				"deleteTable": "Supprimer le tableau"
+			}
+		},
+		"calendar": {
+			"dayTasksAriaLabel": "Show all tasks for {{date}}",
+			"moreTasks": "+{{count}} more",
+			"nextMonth": "Next month",
+			"noTasks": "No scheduled tasks",
+			"noTasksSubtitle": "Add a start date, due date, or both to tasks to place them on the calendar.",
+			"pageTitle": "{{name}} – Calendar",
+			"previousMonth": "Previous month",
+			"taskAriaLabel": "{{title}}, {{range}}: open task",
+			"title": "Calendar",
+			"today": "Today",
+			"loadError": "Failed to load tasks."
 		}
 	},
 	"invitations": {
+		"email": {
+			"subject": "{{inviterName}} vous invite à rejoindre {{workspaceName}} sur Kaneo",
+			"preview": "Vous êtes invité à rejoindre {{workspaceName}} sur Kaneo",
+			"title": "Rejoindre {{workspaceName}}",
+			"subtitle": "{{inviterName}} ({{inviterEmail}}) vous invite à collaborer sur Kaneo.",
+			"cta": "Accepter l’invitation",
+			"sameEmail": "Vous pouvez accepter l’invitation avec l’adresse e-mail qui a reçu ce message.",
+			"ignore": "Si vous ne vous attendiez pas à recevoir ce message, vous pouvez l’ignorer.",
+			"footer": "Invitation à un espace de travail Kaneo"
+		},
 		"pageTitle": "Invitations",
 		"pendingInvitations": "Invitations en attente",
 		"acceptSubtitle": "Acceptez les invitations pour rejoindre les workspaces",
@@ -1719,12 +2056,15 @@
 			"status": "Statut",
 			"emptyTitle": "Aucun projet pour le moment",
 			"emptyDescription": "Commencez par créer votre premier projet.",
+			"emptyDescriptionReadOnly": "Il n'y a pas encore de projets dans cet espace de travail. Demandez à un administrateur d'en créer un.",
 			"projectStatus": {
 				"notStarted": "Non commencé",
 				"complete": "Terminé",
 				"inProgress": "En cours"
 			},
-			"noDueDate": "Pas de date d'échéance"
+			"noDueDate": "Pas de date d'échéance",
+			"reorderHandle": "Réorganiser le projet",
+			"reorderError": "Échec de la réorganisation des projets"
 		},
 		"search": {
 			"pageTitle": "Rechercher",
@@ -1743,7 +2083,8 @@
 			"suggestionBug": "Bug",
 			"suggestionFeature": "Fonctionnalité",
 			"suggestionInProgress": "En cours",
-			"suggestionCompleted": "Terminé"
+			"suggestionCompleted": "Terminé",
+			"resultsFound_many": "{{count}} résultats trouvés"
 		},
 		"create": {
 			"pageTitle": "Créer un workspace",
@@ -1764,11 +2105,21 @@
 		"roles": {
 			"owner": "Propriétaire",
 			"admin": "Admin",
-			"member": "Membre"
+			"member": "Membre",
+			"viewer": "Observateur"
 		},
 		"members": {
 			"pageTitle": "Membres",
-			"inviteMember": "Inviter un membre"
+			"inviteMember": "Inviter un membre",
+			"you": "Vous"
+		},
+		"invitations": {
+			"pendingBadge": "En attente",
+			"expires": "Expire {{date}}",
+			"linkLabel": "Lien d'invitation",
+			"copyLink": "Copier le lien",
+			"linkCopied": "Lien d'invitation copié",
+			"copyFailed": "Impossible de copier automatiquement. Sélectionnez le lien et appuyez sur Ctrl+C."
 		},
 		"inviteModal": {
 			"title": "Inviter un membre de l'équipe",
@@ -1776,7 +2127,10 @@
 			"emailPlaceholder": "collegue@entreprise.fr",
 			"sendInvitation": "Envoyer l'invitation",
 			"success": "Invitation envoyée avec succès",
-			"error": "Échec de l'envoi de l'invitation"
+			"error": "Échec de l'envoi de l'invitation",
+			"createdTitle": "Invitation créée",
+			"shareLinkDescription": "Partagez ce lien avec {{email}} pour qu'il puisse rejoindre l'espace de travail.",
+			"done": "Terminé"
 		},
 		"membersTable": {
 			"emptyTitle": "Aucun membre de l'équipe pour le moment",
@@ -1799,7 +2153,10 @@
 			"removeSuccess": "Membre de l'équipe supprimé avec succès",
 			"removeError": "Échec de la suppression du membre de l'équipe",
 			"cancelInviteSuccess": "Invitation annulée avec succès",
-			"cancelInviteError": "Échec de l'annulation de l'invitation"
+			"cancelInviteError": "Échec de l'annulation de l'invitation",
+			"roleUpdateSuccess": "Rôle mis à jour",
+			"roleUpdateError": "Échec de la mise à jour du rôle",
+			"ariaInvitationActions": "Actions de l'invitation"
 		}
 	},
 	"publicProject": {

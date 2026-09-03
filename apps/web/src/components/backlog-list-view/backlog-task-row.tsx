@@ -20,7 +20,12 @@ import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { cn } from "@/lib/cn";
-import { dueDateStatusColors, getDueDateStatus } from "@/lib/due-date-status";
+import {
+  dueDateStatusColors,
+  getDueDateStatus,
+  isTaskCompleted,
+} from "@/lib/due-date-status";
+import { getInitials } from "@/lib/get-initials";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import queryClient from "@/query-client";
@@ -29,7 +34,7 @@ import useProjectStore from "@/store/project";
 import { useUserPreferencesStore } from "@/store/user-preferences";
 import type Task from "@/types/task";
 import TaskCardContextMenuContent from "../kanban-board/task-card-context-menu/task-card-context-menu-content";
-import TaskCardLabels from "../kanban-board/task-labels";
+import { TaskLabels } from "../kanban-board/task-labels";
 import { ContextMenu, ContextMenuTrigger } from "../ui/context-menu";
 
 type BacklogTaskRowProps = {
@@ -49,6 +54,7 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
   } = useSortable({ id: task.id });
 
   const { project } = useProjectStore();
+  const taskIsCompleted = isTaskCompleted(task.status, project?.columns);
   const { data: workspace } = useActiveWorkspace();
   const {
     showAssignees,
@@ -76,8 +82,7 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
 
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition:
-      transition || "transform 200ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+    transition: transition || "transform 200ms cubic-bezier(0.23, 1, 0.32, 1)",
     touchAction: isDragging ? "none" : "auto",
   };
 
@@ -133,7 +138,7 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
       ref={setNodeRef}
       style={style}
       className={cn(
-        "border-b border-border/50 transition-all duration-200",
+        "border-b border-border/50 transition-colors duration-150",
         isDragging && "opacity-50",
         isTaskSelected &&
           "bg-accent/60 shadow-sm ring-1 ring-inset ring-ring/30",
@@ -171,7 +176,7 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
                 </span>
                 {showLabels && (
                   <div className="flex items-center gap-1">
-                    <TaskCardLabels taskId={task.id} />
+                    <TaskLabels labels={task.labels ?? []} />
                   </div>
                 )}
               </div>
@@ -179,18 +184,16 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
 
             {showDueDates && task.dueDate && (
               <div
-                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded flex-shrink-0 ${dueDateStatusColors[getDueDateStatus(task.dueDate)]}`}
+                className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded flex-shrink-0 ${dueDateStatusColors[getDueDateStatus(task.dueDate, taskIsCompleted)]}`}
               >
-                {getDueDateStatus(task.dueDate) === "overdue" && (
-                  <CalendarX className="w-3 h-3" />
-                )}
-                {getDueDateStatus(task.dueDate) === "due-soon" && (
-                  <CalendarClock className="w-3 h-3" />
-                )}
-                {(getDueDateStatus(task.dueDate) === "far-future" ||
-                  getDueDateStatus(task.dueDate) === "no-due-date") && (
-                  <Calendar className="w-3 h-3" />
-                )}
+                {getDueDateStatus(task.dueDate, taskIsCompleted) ===
+                  "overdue" && <CalendarX className="w-3 h-3" />}
+                {getDueDateStatus(task.dueDate, taskIsCompleted) ===
+                  "due-soon" && <CalendarClock className="w-3 h-3" />}
+                {(getDueDateStatus(task.dueDate, taskIsCompleted) ===
+                  "far-future" ||
+                  getDueDateStatus(task.dueDate, taskIsCompleted) ===
+                    "no-due-date") && <Calendar className="w-3 h-3" />}
                 <span>{format(new Date(task.dueDate), "MMM d")}</span>
               </div>
             )}
@@ -204,7 +207,7 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
                       alt={assignee?.user?.name || ""}
                     />
                     <AvatarFallback className="text-xs font-medium border border-border/30">
-                      {assignee?.user?.name?.charAt(0).toUpperCase()}
+                      {getInitials(assignee?.user?.name)}
                     </AvatarFallback>
                   </Avatar>
                 ) : (
@@ -246,15 +249,19 @@ export default function BacklogTaskRow({ task }: BacklogTaskRowProps) {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogClose>
-              <Button variant="outline" size="sm">
-                {t("common:actions.cancel")}
-              </Button>
+            <AlertDialogClose render={<Button variant="outline" size="sm" />}>
+              {t("common:actions.cancel")}
             </AlertDialogClose>
-            <AlertDialogClose onClick={handleDeleteTask}>
-              <Button variant="destructive" size="sm">
-                {t("tasks:delete.action")}
-              </Button>
+            <AlertDialogClose
+              render={
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDeleteTask}
+                />
+              }
+            >
+              {t("tasks:delete.action")}
             </AlertDialogClose>
           </AlertDialogFooter>
         </AlertDialogContent>

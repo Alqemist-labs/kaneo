@@ -11,7 +11,6 @@ const allowedImageMimeTypes = new Set([
   "image/jpeg",
   "image/jpg",
   "image/png",
-  "image/svg+xml",
   "image/webp",
 ]);
 
@@ -47,10 +46,12 @@ export async function uploadTaskImage({
     }
   }
 
+  const contentType = file.type || "application/octet-stream";
+
   const upload = await createImageUpload({
     taskId,
     filename: file.name || "image",
-    contentType: file.type,
+    contentType,
     size: file.size,
     surface,
   });
@@ -69,7 +70,7 @@ export async function uploadTaskImage({
     taskId,
     key: upload.key,
     filename: file.name || "image",
-    contentType: file.type,
+    contentType,
     size: file.size,
     surface,
   });
@@ -79,7 +80,7 @@ export async function uploadTaskImage({
     alt: getImageAltText(file.name || "image"),
     filename: file.name || "file",
     kind: isSupportedImageFile(file) ? "image" : "attachment",
-    mimeType: file.type,
+    mimeType: contentType,
     size: file.size,
   };
 }

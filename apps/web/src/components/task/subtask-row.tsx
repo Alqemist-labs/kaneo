@@ -1,10 +1,11 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import TaskCardContextMenuContent from "@/components/kanban-board/task-card-context-menu/task-card-context-menu-content";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { getColumnIcon } from "@/lib/column";
+import { getInitials } from "@/lib/get-initials";
 import type Task from "@/types/task";
 import SubtaskAssigneePopover from "./subtask-assignee-popover";
 import SubtaskStatusPopover from "./subtask-status-popover";
@@ -42,22 +43,29 @@ export default function SubtaskRow({
   onNavigate,
   onDeleteClick,
 }: SubtaskRowProps) {
+  const reduceMotion = useReducedMotion();
   const { t } = useTranslation();
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, height: 0 }}
-      animate={{ opacity: 1, height: "auto" }}
-      exit={{ opacity: 0, height: 0 }}
-      transition={{ duration: 0.2, ease: "easeOut" }}
+      initial={
+        reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, scale: 0.98 }
+      }
+      animate={
+        reduceMotion ? { opacity: 1 } : { opacity: 1, height: "auto", scale: 1 }
+      }
+      exit={
+        reduceMotion ? { opacity: 0 } : { opacity: 0, height: 0, scale: 0.98 }
+      }
+      transition={{ type: "spring", duration: 0.4, bounce: 0.15 }}
     >
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div
             className={`group flex items-center gap-2 py-1 px-2 ${selectionRadius} transition-colors cursor-default ${isSelected ? "bg-primary/10 hover:bg-primary/15" : "hover:bg-accent/50"} ${isFocused ? "ring-1 ring-inset ring-ring/50" : ""}`}
           >
-            {/* Completion — toggles the subtask done/undone and persists it. */}
+            {/* Completion checkbox: toggles the subtask done/undone and persists it. */}
             <Checkbox
               checked={isCompleted}
               onCheckedChange={onToggleComplete}
@@ -100,7 +108,7 @@ export default function SubtaskRow({
                       alt={assignee?.user?.name || ""}
                     />
                     <AvatarFallback className="text-[9px] font-medium border border-border/30">
-                      {assignee?.user?.name?.charAt(0).toUpperCase()}
+                      {getInitials(assignee?.user?.name)}
                     </AvatarFallback>
                   </Avatar>
                 ) : (

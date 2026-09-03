@@ -4,6 +4,10 @@ import db from "../../database";
 import { columnTable, taskTable } from "../../database/schema";
 import { publishEvent } from "../../events";
 import { deleteOrphanedAssets } from "../../storage/cleanup-assets";
+import {
+  assertAssignableUser,
+  getProjectWorkspaceId,
+} from "../../utils/assert-assignable-user";
 import { assertValidTaskStatus } from "../validate-task-fields";
 
 async function updateTask(
@@ -19,9 +23,16 @@ async function updateTask(
   userId?: string,
   currentUserId?: string,
 ) {
-  const existingTask = await db.query.taskTable.findFirst({
-    where: eq(taskTable.id, id),
-  });
+  const [existingTask] = await db
+    .select({
+      id: taskTable.id,
+      description: taskTable.description,
+      status: taskTable.status,
+      projectId: taskTable.projectId,
+    })
+    .from(taskTable)
+    .where(eq(taskTable.id, id))
+    .limit(1);
 
   if (!existingTask) {
     throw new HTTPException(404, {
@@ -29,7 +40,22 @@ async function updateTask(
     });
   }
 
+  if (projectId !== existingTask.projectId) {
+    throw new HTTPException(400, {
+      message: "Use the task move endpoint to move tasks between projects",
+    });
+  }
+
   await assertValidTaskStatus(status, projectId);
+
+  const normalizedUserId = userId?.trim() || undefined;
+
+  if (normalizedUserId) {
+    await assertAssignableUser(
+      normalizedUserId,
+      await getProjectWorkspaceId(projectId),
+    );
+  }
 
   const column = await db.query.columnTable.findFirst({
     where: and(
@@ -50,7 +76,7 @@ async function updateTask(
       description,
       priority,
       position,
-      userId: userId || null,
+      userId: normalizedUserId ?? null,
     })
     .where(eq(taskTable.id, id))
     .returning();

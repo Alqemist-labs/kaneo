@@ -30,7 +30,7 @@ type SignUpFormProps = {
   /**
    * Captcha token lifted from the page level. When the page renders Turnstile
    * (cloud only), it passes the verified token here. `null` means captcha is
-   * required but not yet completed — the submit button stays disabled.
+   * required but not yet completed, so the submit button stays disabled.
    * `undefined` means captcha isn't required at all (self-hosted).
    */
   turnstileToken?: string | null;
@@ -71,15 +71,21 @@ export function SignUpForm({
   const onSubmit = async (data: SignUpFormValues) => {
     setIsPending(true);
     try {
+      const headers: Record<string, string> = {};
+      if (turnstileToken) {
+        headers["x-turnstile-token"] = turnstileToken;
+      }
+      if (invitationId) {
+        headers["x-invitation-id"] = invitationId;
+      }
+
       const result = await authClient.signUp.email(
         {
           email: data.email,
           name: data.name,
           password: data.password,
         },
-        turnstileToken
-          ? { headers: { "x-turnstile-token": turnstileToken } }
-          : undefined,
+        Object.keys(headers).length > 0 ? { headers } : undefined,
       );
 
       if (result.error) {

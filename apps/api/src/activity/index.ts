@@ -1,8 +1,10 @@
-import { Hono } from "hono";
-import { describeRoute, resolver, validator } from "hono-openapi";
-import * as v from "valibot";
 import { subscribeToEvent } from "../events";
-import { activitySchema, workspaceActivityFeedItemSchema } from "../schemas";
+import {
+  apiRouter,
+  createRoute,
+  errorResponse,
+  jsonResponse,
+} from "../openapi";
 import { requireWorkspacePermission } from "../utils/require-workspace-permission";
 import { workspaceAccess } from "../utils/workspace-access-middleware";
 import createActivity from "./controllers/create-activity";
@@ -11,220 +13,196 @@ import deleteComment from "./controllers/delete-comment";
 import getActivities from "./controllers/get-activities";
 import getWorkspaceActivities from "./controllers/get-workspace-activities";
 import updateComment from "./controllers/update-comment";
+import {
+  activityListSchema,
+  activitySchema,
+  workspaceActivityFeedListSchema,
+} from "./response";
+import {
+  createActivityBody,
+  createCommentBody,
+  deleteCommentBody,
+  taskIdParam,
+  updateCommentBody,
+  workspaceActivitiesQuery,
+  workspaceIdParam,
+} from "./schema";
 
-const activity = new Hono<{
-  Variables: {
-    userId: string;
-  };
-}>()
-  .get(
-    "/workspace/:workspaceId",
-    describeRoute({
-      operationId: "getWorkspaceActivities",
-      tags: ["Activity"],
-      description:
-        "List recent task activities across all projects in a workspace (newest first)",
-      responses: {
-        200: {
-          description: "Activities with task and project context",
-          content: {
-            "application/json": {
-              schema: resolver(v.array(workspaceActivityFeedItemSchema)),
-            },
-          },
-        },
-      },
-    }),
-    workspaceAccess.fromParam("workspaceId"),
-    validator("param", v.object({ workspaceId: v.string() })),
-    validator(
-      "query",
-      v.object({
-        limit: v.optional(
-          v.pipe(
-            v.string(),
-            v.transform((s) => Number.parseInt(s, 10)),
-            v.number(),
-            v.integer(),
-            v.minValue(1),
-            v.maxValue(100),
-          ),
-        ),
-        offset: v.optional(
-          v.pipe(
-            v.string(),
-            v.transform((s) => Number.parseInt(s, 10)),
-            v.number(),
-            v.integer(),
-            v.minValue(0),
-          ),
-        ),
-      }),
+const getWorkspaceActivitiesRoute = createRoute({
+  method: "get",
+  operationId: "getWorkspaceActivities",
+  path: "/workspace/{workspaceId}",
+  tags: ["Activity"],
+  summary: "Get workspace activity",
+  description:
+    "List recent task activities across all projects in a workspace, newest first.",
+  middleware: [workspaceAccess.fromParam("workspaceId")] as const,
+  request: { params: workspaceIdParam, query: workspaceActivitiesQuery },
+  responses: {
+    200: jsonResponse(
+      "Activities with task and project context",
+      workspaceActivityFeedListSchema,
     ),
-    async (c) => {
-      const { workspaceId } = c.req.valid("param");
-      const query = c.req.valid("query");
-      const limit = query.limit ?? 50;
-      const offset = query.offset ?? 0;
-      const items = await getWorkspaceActivities(workspaceId, {
-        limit,
-        offset,
-      });
-      return c.json(items);
-    },
-  )
-  .get(
-    "/:taskId",
-    describeRoute({
-      operationId: "getActivities",
-      tags: ["Activity"],
-      description: "Get all activities for a specific task",
-      responses: {
-        200: {
-          description: "List of activities for the task",
-          content: {
-            "application/json": { schema: resolver(v.array(activitySchema)) },
-          },
-        },
-      },
-    }),
-    validator("param", v.object({ taskId: v.string() })),
-    workspaceAccess.fromTaskId(),
-    async (c) => {
-      const { taskId } = c.req.valid("param");
-      const activities = await getActivities(taskId);
-      return c.json(activities);
-    },
-  )
-  .post(
-    "/create",
-    describeRoute({
-      operationId: "createActivity",
-      tags: ["Activity"],
-      description: "Create a new activity (system-generated event)",
-      responses: {
-        200: {
-          description: "Activity created successfully",
-          content: {
-            "application/json": { schema: resolver(activitySchema) },
-          },
-        },
-      },
-    }),
-    validator(
-      "json",
-      v.object({
-        taskId: v.string(),
-        userId: v.string(),
-        message: v.nullable(v.string()),
-        type: v.string(),
-        eventData: v.optional(v.nullable(v.record(v.string(), v.unknown()))),
-      }),
+    400: errorResponse("Invalid query parameters"),
+    403: errorResponse("No access to the workspace"),
+  },
+});
+
+const getActivitiesRoute = createRoute({
+  method: "get",
+  operationId: "getActivities",
+  path: "/{taskId}",
+  tags: ["Activity"],
+  summary: "Get task activity",
+  description:
+    "Get a task's full activity feed, newest first: comments alongside system events such as status and assignee changes.",
+  middleware: [workspaceAccess.fromTaskId()] as const,
+  request: { params: taskIdParam },
+  responses: {
+    200: jsonResponse("List of activities for the task", activityListSchema),
+    400: errorResponse(
+      "Unknown task, or its workspace could not be determined",
     ),
+    403: errorResponse("No access to the task's workspace"),
+  },
+});
+
+const createActivityRoute = createRoute({
+  method: "post",
+  operationId: "createActivity",
+  path: "/create",
+  tags: ["Activity"],
+  summary: "Create activity",
+  description:
+    "Record a system-generated event on a task. Most events are written by the server itself; this exists for importers and integrations.",
+  middleware: [
     workspaceAccess.fromTaskId(),
     requireWorkspacePermission({ task: ["update"] }),
-    async (c) => {
-      const { taskId, userId, message, type, eventData } = c.req.valid("json");
-      const activity = await createActivity(
-        taskId,
-        type,
-        userId,
-        message,
-        eventData,
-      );
-      return c.json(activity);
+  ] as const,
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: createActivityBody } },
     },
-  )
-  .post(
-    "/comment",
-    describeRoute({
-      operationId: "createComment",
-      tags: ["Activity"],
-      description: "Create a new comment on a task",
-      responses: {
-        200: {
-          description: "Comment created successfully",
-          content: {
-            "application/json": { schema: resolver(activitySchema) },
-          },
-        },
-      },
-    }),
-    validator(
-      "json",
-      v.object({
-        taskId: v.string(),
-        comment: v.string(),
-      }),
+  },
+  responses: {
+    200: jsonResponse("The created activity", activitySchema),
+    400: errorResponse("Invalid body, or unknown task"),
+    403: errorResponse(
+      "No workspace access, or missing task:update permission",
     ),
+  },
+});
+
+const createCommentRoute = createRoute({
+  method: "post",
+  operationId: "createComment",
+  path: "/comment",
+  tags: ["Activity"],
+  summary: "Create comment",
+  description:
+    "Add a comment to a task. Equivalent to POST /comment/{taskId}, kept for the activity-feed client.",
+  middleware: [
     workspaceAccess.fromTaskId(),
     requireWorkspacePermission({ task: ["update"] }),
-    async (c) => {
-      const { taskId, comment } = c.req.valid("json");
-      const userId = c.get("userId");
-      const newComment = await createComment(taskId, userId, comment);
+  ] as const,
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: createCommentBody } },
+    },
+  },
+  responses: {
+    200: jsonResponse("The created comment", activitySchema),
+    400: errorResponse("Invalid body, or unknown task"),
+    403: errorResponse(
+      "No workspace access, or missing task:update permission",
+    ),
+  },
+});
 
-      return c.json(newComment);
+const updateCommentRoute = createRoute({
+  method: "put",
+  operationId: "updateComment",
+  path: "/comment",
+  tags: ["Activity"],
+  summary: "Update comment",
+  description: "Edit a comment. Only the comment's author may do this.",
+  middleware: [workspaceAccess.fromActivity("activityId")] as const,
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: updateCommentBody } },
     },
-  )
-  .put(
-    "/comment",
-    describeRoute({
-      operationId: "updateComment",
-      tags: ["Activity"],
-      description: "Update an existing comment",
-      responses: {
-        200: {
-          description: "Comment updated successfully",
-          content: {
-            "application/json": { schema: resolver(activitySchema) },
-          },
-        },
-      },
-    }),
-    validator(
-      "json",
-      v.object({
-        activityId: v.string(),
-        comment: v.string(),
+  },
+  responses: {
+    200: jsonResponse("The updated comment", activitySchema),
+    400: errorResponse("Invalid body, or unknown activity"),
+    403: errorResponse("Not the author, or no access to the workspace"),
+    404: errorResponse("Comment not found"),
+  },
+});
+
+const deleteCommentRoute = createRoute({
+  method: "delete",
+  operationId: "deleteComment",
+  path: "/comment",
+  tags: ["Activity"],
+  summary: "Delete comment",
+  description: "Delete a comment. Only the comment's author may do this.",
+  middleware: [workspaceAccess.fromActivity("activityId")] as const,
+  request: {
+    body: {
+      required: true,
+      content: { "application/json": { schema: deleteCommentBody } },
+    },
+  },
+  responses: {
+    200: jsonResponse("The deleted comment", activitySchema),
+    400: errorResponse("Invalid body, or unknown activity"),
+    403: errorResponse("Not the author, or no access to the workspace"),
+    404: errorResponse("Comment not found"),
+  },
+});
+
+const activity = apiRouter()
+  .openapi(getWorkspaceActivitiesRoute, async (c) => {
+    const { workspaceId } = c.req.valid("param");
+    const { limit, offset } = c.req.valid("query");
+    return c.json(
+      await getWorkspaceActivities(workspaceId, {
+        limit: limit ?? 50,
+        offset: offset ?? 0,
       }),
-    ),
-    workspaceAccess.fromActivity("activityId"),
-    async (c) => {
-      const { activityId, comment } = c.req.valid("json");
-      const userId = c.get("userId");
-      const updatedComment = await updateComment(userId, activityId, comment);
-      return c.json(updatedComment);
-    },
+      200,
+    );
+  })
+  .openapi(getActivitiesRoute, async (c) =>
+    c.json(await getActivities(c.req.valid("param").taskId), 200),
   )
-  .delete(
-    "/comment",
-    describeRoute({
-      operationId: "deleteComment",
-      tags: ["Activity"],
-      description: "Delete a comment",
-      responses: {
-        200: {
-          description: "Comment deleted successfully",
-          content: {
-            "application/json": { schema: resolver(activitySchema) },
-          },
-        },
-      },
-    }),
-    validator(
-      "json",
-      v.object({
-        activityId: v.string(),
-      }),
+  .openapi(createActivityRoute, async (c) => {
+    const { taskId, message, type, eventData } = c.req.valid("json");
+    return c.json(
+      await createActivity(taskId, type, c.get("userId"), message, eventData),
+      200,
+    );
+  })
+  .openapi(createCommentRoute, async (c) => {
+    const { taskId, comment } = c.req.valid("json");
+    return c.json(await createComment(taskId, c.get("userId"), comment), 200);
+  })
+  .openapi(updateCommentRoute, async (c) => {
+    const { activityId, comment } = c.req.valid("json");
+    return c.json(
+      await updateComment(c.get("userId"), activityId, comment),
+      200,
+    );
+  })
+  .openapi(deleteCommentRoute, async (c) =>
+    c.json(
+      await deleteComment(c.get("userId"), c.req.valid("json").activityId),
+      200,
     ),
-    workspaceAccess.fromActivity("activityId"),
-    async (c) => {
-      const { activityId } = c.req.valid("json");
-      const userId = c.get("userId");
-      const deletedComment = await deleteComment(userId, activityId);
-      return c.json(deletedComment);
-    },
   );
 
 subscribeToEvent<{
@@ -341,20 +319,6 @@ subscribeToEvent<{
       data.newDueDate instanceof Date
         ? data.newDueDate.toISOString()
         : data.newDueDate,
-  });
-});
-
-subscribeToEvent<{
-  taskId: string;
-  userId: string;
-  oldTitle: string;
-  newTitle: string;
-  title: string;
-  type: string;
-}>("task.title_changed", async (data) => {
-  await createActivity(data.taskId, data.type, data.userId, null, {
-    oldTitle: data.oldTitle,
-    newTitle: data.newTitle,
   });
 });
 

@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm";
 import db from "../../../database";
 import { columnTable, projectTable, taskTable } from "../../../database/schema";
 import { publishEvent } from "../../../events";
-import getNextTaskNumber from "../../../task/controllers/get-next-task-number";
+import { claimTaskNumber } from "../../../task/controllers/claim-task-numbers";
 import {
   createExternalLink,
   findExternalLink,
@@ -39,7 +39,10 @@ type IssueOpenedPayload = {
   };
 };
 
-export async function handleGiteaIssueOpened(payload: IssueOpenedPayload) {
+export async function handleGiteaIssueOpened(
+  payload: IssueOpenedPayload,
+  integrationId?: string,
+) {
   const { issue, repository } = payload;
 
   const baseUrl = baseUrlFromRepositoryHtmlUrl(repository.html_url);
@@ -52,6 +55,7 @@ export async function handleGiteaIssueOpened(payload: IssueOpenedPayload) {
     baseUrl,
     owner,
     repository.name,
+    integrationId,
   );
 
   if (integrations.length === 0) {
@@ -84,7 +88,7 @@ export async function handleGiteaIssueOpened(payload: IssueOpenedPayload) {
       continue;
     }
 
-    const nextTaskNumber = await getNextTaskNumber(projectId);
+    const nextTaskNumber = await claimTaskNumber(projectId);
 
     const resolvedStatus = await resolveTargetStatus(
       projectId,
@@ -106,11 +110,9 @@ export async function handleGiteaIssueOpened(payload: IssueOpenedPayload) {
       description: formatTaskDescriptionFromIssue(issue.body),
       status: resolvedStatus,
       columnId: targetColumn?.id ?? null,
-      priority: null,
-      number: nextTaskNumber + 1,
+      priority: priority ?? "low",
+      number: nextTaskNumber,
     };
-
-    if (priority) taskValues.priority = priority;
 
     const [createdTask] = await db
       .insert(taskTable)
@@ -122,17 +124,8 @@ export async function handleGiteaIssueOpened(payload: IssueOpenedPayload) {
       continue;
     }
 
-    await publishEvent("task.created", {
-      ...createdTask,
-      taskId: createdTask.id,
-      userId: createdTask.userId ?? "",
-      type: "task",
-      content: null,
-      source: "gitea",
-      externalId: issue.number.toString(),
-      actor: issue.user?.login ?? issue.user?.username ?? "gitea-webhook",
-    });
-
+    // Must run before task.created: the plugin's onTaskCreated uses link
+    // existence to skip self-originated tasks, else it duplicates the issue.
     await createExternalLink({
       taskId: createdTask.id,
       integrationId: integration.id,
@@ -145,6 +138,17 @@ export async function handleGiteaIssueOpened(payload: IssueOpenedPayload) {
         createdFrom: "gitea",
         author: issue.user?.login ?? issue.user?.username,
       },
+    });
+
+    await publishEvent("task.created", {
+      ...createdTask,
+      taskId: createdTask.id,
+      userId: createdTask.userId ?? "",
+      type: "task",
+      content: null,
+      source: "gitea",
+      externalId: issue.number.toString(),
+      actor: issue.user?.login ?? issue.user?.username ?? "gitea-webhook",
     });
 
     const project = await db.query.projectTable.findFirst({

@@ -3,6 +3,7 @@ import { produce } from "immer";
 import {
   CalendarIcon,
   Check,
+  FolderKanban,
   Plus,
   Search,
   Tag,
@@ -41,11 +42,13 @@ import useCreateTask from "@/hooks/mutations/task/use-create-task";
 import { useDeleteTask } from "@/hooks/mutations/task/use-delete-task";
 import { useUpdateTask } from "@/hooks/mutations/task/use-update-task";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
+import useGetProjects from "@/hooks/queries/project/use-get-projects";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { formatDateMedium } from "@/lib/format";
+import { getInitials } from "@/lib/get-initials";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
 import useProjectStore from "@/store/project";
@@ -175,9 +178,9 @@ function CreateTaskModal({
   const { data: workspaceLabels = [] } = useGetLabelsByWorkspace(
     workspace?.id || "",
   );
-  const { canCreateTasks, canManageLabels } = useWorkspacePermission();
+  const { canCreateTasks, canCreateLabels } = useWorkspacePermission();
   const canCreateTaskCapability = canCreateTasks();
-  const canCreateLabelCapability = canManageLabels();
+  const canCreateLabelCapability = canCreateLabels();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -197,7 +200,16 @@ function CreateTaskModal({
 
   const routeProjectId =
     location.pathname.match(/\/project\/([^/]+)/)?.[1] ?? null;
-  const resolvedProjectId = projectId || project?.id || routeProjectId || "";
+  const explicitProjectId = projectId || routeProjectId || "";
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const resolvedProjectId =
+    explicitProjectId || selectedProjectId || project?.id || "";
+  const { data: workspaceProjects } = useGetProjects({
+    workspaceId: workspace?.id || "",
+  });
+  const resolvedProject = explicitProjectId
+    ? project
+    : (workspaceProjects?.find((p) => p.id === resolvedProjectId) ?? null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
   const draftCreationPromiseRef = useRef<Promise<Task> | null>(null);
@@ -486,7 +498,7 @@ function CreateTaskModal({
 
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        if (title.trim() && project?.id && workspace?.id) {
+        if (title.trim() && resolvedProjectId && workspace?.id) {
           const form = document.querySelector("form");
           if (form) {
             form.dispatchEvent(
@@ -496,7 +508,7 @@ function CreateTaskModal({
         }
       }
     },
-    [open, title, project?.id, workspace?.id],
+    [open, title, resolvedProjectId, workspace?.id],
   );
 
   useEffect(() => {
@@ -596,7 +608,7 @@ function CreateTaskModal({
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="text-muted-foreground font-semibold tracking-wider text-sm">
-                  {project?.slug?.toUpperCase() ||
+                  {resolvedProject?.slug?.toUpperCase() ||
                     t("common:modals.createTask.breadcrumbTask")}
                 </BreadcrumbItem>
                 <BreadcrumbSeparator />
@@ -665,6 +677,48 @@ function CreateTaskModal({
             )}
 
             <div className="flex flex-wrap items-center gap-2 py-2">
+              {!explicitProjectId && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button
+                      type="button"
+                      className={cn(
+                        "flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-md transition-colors border border-border hover:bg-accent/50",
+                        resolvedProjectId
+                          ? "bg-accent/30 text-foreground"
+                          : "text-muted-foreground",
+                      )}
+                    >
+                      <FolderKanban className="w-3.5 h-3.5" />
+                      <span>
+                        {resolvedProject?.name ||
+                          t("common:modals.createTask.selectProject")}
+                      </span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-48 p-1" align="start">
+                    <div className="space-y-1">
+                      {workspaceProjects?.map((workspaceProject) => (
+                        <button
+                          key={workspaceProject.id}
+                          type="button"
+                          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm hover:bg-accent/50 text-left transition-colors h-8"
+                          onClick={() =>
+                            setSelectedProjectId(workspaceProject.id)
+                          }
+                        >
+                          <span className="text-sm truncate">
+                            {workspaceProject.name}
+                          </span>
+                          {resolvedProjectId === workspaceProject.id && (
+                            <Check className="ml-auto h-4 w-4 shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
               <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-accent/50 text-foreground rounded-md text-xs font-medium border border-border">
                 <div className="w-1.5 h-1.5 bg-foreground rounded-full" />
                 {statusLabel}
@@ -770,9 +824,7 @@ function CreateTaskModal({
                             alt={selectedUser?.user?.name || ""}
                           />
                           <AvatarFallback className="text-[10px] font-medium border border-border/30">
-                            {selectedUser?.user?.name
-                              ?.charAt(0)
-                              .toUpperCase() || "?"}
+                            {getInitials(selectedUser?.user?.name)}
                           </AvatarFallback>
                         </Avatar>
                         <span>{selectedUser.user?.name}</span>
@@ -820,7 +872,7 @@ function CreateTaskModal({
                             alt={member?.user?.name || ""}
                           />
                           <AvatarFallback className="text-xs font-medium border border-border/30">
-                            {member?.user?.name?.charAt(0).toUpperCase() || "?"}
+                            {getInitials(member?.user?.name)}
                           </AvatarFallback>
                         </Avatar>
                         <span className="text-sm">{member?.user?.name}</span>
@@ -1031,7 +1083,7 @@ function CreateTaskModal({
                   type="checkbox"
                   checked={createMore}
                   onChange={(e) => setCreateMore(e.target.checked)}
-                  className="rounded border-border bg-background text-primary focus:ring-ring focus:ring-offset-0 focus:ring-2 transition-all"
+                  className="rounded border-border bg-background text-primary focus:ring-ring focus:ring-offset-0 focus:ring-2 transition-[border-color,box-shadow]"
                 />
                 {t("common:modals.createTask.createMore")}
               </label>

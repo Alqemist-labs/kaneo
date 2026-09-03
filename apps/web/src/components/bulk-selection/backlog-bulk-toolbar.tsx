@@ -50,6 +50,7 @@ import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { getColumnIcon } from "@/lib/column";
+import { getInitials } from "@/lib/get-initials";
 import { getPriorityLabel } from "@/lib/i18n/domain";
 import { getPriorityIcon } from "@/lib/priority";
 import { toast } from "@/lib/toast";
@@ -103,9 +104,12 @@ function BacklogBulkToolbar() {
   const { data: workspaceLabels = [] } = useGetLabelsByWorkspace(
     workspace?.id ?? "",
   );
-  const { canManageTasks, canAssignTasks } = useWorkspacePermission();
-  const canEdit = canManageTasks();
+  const { canUpdateTasks, canDeleteTasks, canAssignTasks, canUpdateLabels } =
+    useWorkspacePermission();
+  const canEdit = canUpdateTasks();
+  const canDelete = canDeleteTasks();
   const canAssign = canAssignTasks();
+  const canEditLabels = canUpdateLabels();
   const [isActionsOpen, setIsActionsOpen] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
 
@@ -260,27 +264,35 @@ function BacklogBulkToolbar() {
 
   const groupedItems = useMemo<BacklogActionGroup[]>(() => {
     const groups: BacklogActionGroup[] = [];
-    if (canEdit) {
+    if (canEdit || canDelete) {
       groups.push({
         value: "actions",
         label: t("tasks:bulk.actions"),
         items: [
-          {
-            value: "bulk-delete",
-            label: t("tasks:bulk.delete"),
-            icon: <Trash2 className="h-4 w-4 text-muted-foreground" />,
-            onRun: () => {
-              void handleBulkDelete();
-            },
-          },
-          {
-            value: "bulk-archive",
-            label: t("tasks:bulk.archive"),
-            icon: <Archive className="h-4 w-4 text-muted-foreground" />,
-            onRun: () => {
-              void handleBulkArchive();
-            },
-          },
+          ...(canDelete
+            ? [
+                {
+                  value: "bulk-delete",
+                  label: t("tasks:bulk.delete"),
+                  icon: <Trash2 className="h-4 w-4 text-muted-foreground" />,
+                  onRun: () => {
+                    void handleBulkDelete();
+                  },
+                },
+              ]
+            : []),
+          ...(canEdit
+            ? [
+                {
+                  value: "bulk-archive",
+                  label: t("tasks:bulk.archive"),
+                  icon: <Archive className="h-4 w-4 text-muted-foreground" />,
+                  onRun: () => {
+                    void handleBulkArchive();
+                  },
+                },
+              ]
+            : []),
         ],
       });
     }
@@ -298,7 +310,7 @@ function BacklogBulkToolbar() {
                 alt={member.user?.name || ""}
               />
               <AvatarFallback className="text-xs font-medium border border-border/30">
-                {member.user?.name?.charAt(0).toUpperCase()}
+                {getInitials(member.user?.name)}
               </AvatarFallback>
             </Avatar>
           ),
@@ -321,6 +333,8 @@ function BacklogBulkToolbar() {
           },
         })),
       });
+    }
+    if (canEditLabels) {
       groups.push({
         value: "label",
         label: t("tasks:bulk.addLabel"),
@@ -346,7 +360,9 @@ function BacklogBulkToolbar() {
     return groups;
   }, [
     canEdit,
+    canDelete,
     canAssign,
+    canEditLabels,
     workspaceUsers?.members,
     uniqueLabels,
     handleBulkDelete,
@@ -359,10 +375,10 @@ function BacklogBulkToolbar() {
   ]);
 
   if (selectedCount === 0) return null;
-  if (!canEdit && !canAssign) return null;
+  if (!canEdit && !canDelete && !canAssign && !canEditLabels) return null;
 
   return (
-    <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+    <div className="-translate-x-1/2 fixed bottom-6 left-1/2 z-50 transition-[translate,opacity] duration-200 ease-out starting:translate-y-3 starting:opacity-0 motion-reduce:starting:translate-y-0">
       <Toolbar className="items-center gap-1 rounded-xl border-border/80 bg-background px-1.5 py-1 shadow-lg/8">
         <ToolbarGroup className="px-1.5">
           <span className="text-sm font-medium text-foreground">

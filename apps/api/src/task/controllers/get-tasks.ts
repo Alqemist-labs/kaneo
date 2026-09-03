@@ -137,7 +137,6 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     assigneeId: userTable.id,
     assigneeEmail: userTable.email,
     assigneeImage: userTable.image,
-    assigneeAvatarUpdatedAt: userTable.avatarUpdatedAt,
     projectId: taskTable.projectId,
   };
 
@@ -157,13 +156,11 @@ async function getTasks(projectId: string, options: GetTasksOptions = {}) {
     const assigneeImage =
       task.assigneeId && task.assigneeEmail
         ? resolveUserDisplayImageUrl({
-            id: task.assigneeId,
             email: task.assigneeEmail,
             image: task.assigneeImage,
-            avatarUpdatedAt: task.assigneeAvatarUpdatedAt,
           })
         : task.assigneeImage;
-    const { assigneeEmail, assigneeAvatarUpdatedAt, ...rest } = task;
+    const { assigneeEmail, ...rest } = task;
     return { ...rest, assigneeImage };
   });
 

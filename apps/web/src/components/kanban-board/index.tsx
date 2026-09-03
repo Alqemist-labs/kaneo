@@ -111,7 +111,7 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
       },
     }),
     duration: 300,
-    easing: "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+    easing: "cubic-bezier(0.23, 1, 0.32, 1)",
   };
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -162,7 +162,10 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
           queryKey: ["projects", project.workspaceId],
         });
       } else {
-        task.status = destinationColumn.id;
+        // A task's status is a column slug. The column id is only the
+        // droppable identity here, and the two are interchangeable only
+        // because the tasks endpoint happens to return `id: column.slug`.
+        task.status = destinationColumn.slug;
         const destinationIndex =
           overId === destinationColumn.id
             ? destinationColumn.tasks.length
@@ -171,7 +174,7 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
         destinationColumn.tasks.splice(destinationIndex, 0, task);
 
         destinationColumn.tasks.forEach((t, index) => {
-          updateTask({ ...t, status: destinationColumn.id, position: index });
+          updateTask({ ...t, status: destinationColumn.slug, position: index });
         });
 
         sourceColumn.tasks.forEach((t, index) => {
@@ -184,7 +187,7 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
     setActiveId(null);
   };
 
-  if (!project || !project?.columns) {
+  if (!project?.columns) {
     return (
       <div className="flex h-full w-full flex-col bg-linear-to-b from-muted/25 to-background">
         <header className="mb-6 mt-6 space-y-6 shrink-0 px-6">
@@ -247,13 +250,13 @@ function KanbanBoard({ project, disableDragDrop = false }: KanbanBoardProps) {
     >
       <div className="flex h-full w-full flex-col bg-linear-to-b from-muted/20 to-background">
         <div className="min-h-0 flex-1 overflow-x-auto [-webkit-overflow-scrolling:touch]">
-          <div className="flex h-full min-w-max gap-4 px-4 py-4 transition-all duration-200 ease-out md:px-5">
+          <div className="flex h-full min-w-max gap-4 px-4 py-4 md:px-5">
             {project.columns?.map((column) => (
               <div
                 key={column.id}
                 className="h-full max-w-96 min-w-80 shrink-0 flex-1"
               >
-                <Column column={column} />
+                <Column column={column} disableDragDrop={disableDragDrop} />
               </div>
             ))}
           </div>

@@ -1,22 +1,22 @@
+import "./instrument";
+
 import { dirname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { serve } from "@hono/node-server";
 import { createNodeWebSocket } from "@hono/node-ws";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import * as Sentry from "@sentry/node";
 import type { Session, User } from "better-auth/types";
 import { eq, sql } from "drizzle-orm";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Hono } from "hono";
+import { compress } from "hono/compress";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
-import {
-  describeRoute,
-  openAPIRouteHandler,
-  resolver,
-  validator,
-} from "hono-openapi";
-import * as v from "valibot";
 import activity from "./activity";
 import { auth } from "./auth";
+import { organizationRoutes } from "./auth-openapi";
+import billing from "./billing";
 import column from "./column";
 import comment from "./comment";
 import config from "./config";
@@ -39,6 +39,7 @@ import { migrateColumns } from "./migrations/column-migration";
 import notification from "./notification";
 import notificationPreferences from "./notification-preferences";
 import oauth from "./oauth";
+import { createRoute, jsonResponse, z } from "./openapi";
 import { initializePlugins } from "./plugins";
 import { migrateGitHubIntegration } from "./plugins/github/migration";
 import project from "./project";
@@ -52,32 +53,19 @@ import taskRelation from "./task-relation";
 import telegramIntegration from "./telegram-integration";
 import timeEntry from "./time-entry";
 import user from "./user";
-import { getUserAvatarHttpResponse } from "./user/controllers/get-user-avatar-http";
-import {
-  authenticateApiRequest,
-  resolveAssetBearerOrCookie,
-} from "./utils/authenticate-api-request";
+import getAvatar from "./user/controllers/get-avatar";
+import { authenticateApiRequest } from "./utils/authenticate-api-request";
+import { authorizeAssetAccess } from "./utils/authorize-asset-access";
 import { getInvitationDetails } from "./utils/check-registration-allowed";
 import { migrateApiKeyReferenceId } from "./utils/migrate-apikey-reference-id";
 import { migrateFkSupportingSchema } from "./utils/migrate-fk-supporting-schema";
+import { migrateForkAvatarBlobs } from "./utils/migrate-fork-avatar-blobs";
 import { migrateNotificationPreferencesSchema } from "./utils/migrate-notification-preferences-schema";
-import { migrateRbacAndAvatarSchema } from "./utils/migrate-rbac-and-avatar-schema";
+import { migrateRbacSchema } from "./utils/migrate-rbac-schema";
 import { migrateSessionColumn } from "./utils/migrate-session-column";
 import { migrateWorkspaceUserEmail } from "./utils/migrate-workspace-user-email";
-import {
-  dedupeOperationIds,
-  ensureOperationSummaries,
-  markOptionalSchemaFieldsNullable,
-  mergeOpenApiSpecs,
-  normalizeApiServerUrl,
-  normalizeEmptyAndEnumSchemas,
-  normalizeEmptyRequiredArrays,
-  normalizeMalformedPropertySchemas,
-  normalizeNullableSchemasForOpenApi30,
-  normalizeOrganizationAuthOperations,
-} from "./utils/openapi-spec";
+import { normalizeApiServerUrl } from "./utils/openapi-spec";
 import { seedDefaultWorkspaceRoles } from "./utils/seed-default-workspace-roles";
-import { resolveUserDisplayImageUrl } from "./utils/user-display-image";
 import { validateWorkspaceAccess } from "./utils/validate-workspace-access";
 import workflowRule from "./workflow-rule";
 import workspace from "./workspace";
@@ -94,6 +82,7 @@ type ApiKey = {
   id: string;
   userId: string;
   enabled: boolean;
+  permissions: Record<string, string[]> | null;
 };
 
 type AppVariables = {
@@ -115,7 +104,19 @@ type ApiVariables = {
   };
 };
 
-function buildContentDisposition(filename: string) {
+const SAFE_INLINE_ASSET_TYPES = new Set([
+  "image/apng",
+  "image/avif",
+  "image/gif",
+  "image/heic",
+  "image/heif",
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+]);
+
+function buildContentDisposition(filename: string, inline: boolean) {
   const normalized = filename
     .normalize("NFC")
     .replace(/[\r\n"]/g, "")
@@ -126,7 +127,7 @@ function buildContentDisposition(filename: string) {
       .normalize("NFKD")
       .replace(/[\u0300-\u036f]/g, "")
       .replace(/[\\/]/g, "-")
-      .replace(/[^\x20-\u7E]+/g, "_")
+      .replace(/[^\x20-\x7E]+/g, "_")
       .replace(/\s+/g, " ")
       .trim() || "file";
   const encodedFilename = encodeURIComponent(safeFilename).replace(
@@ -134,11 +135,25 @@ function buildContentDisposition(filename: string) {
     (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`,
   );
 
-  return `inline; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
+  const disposition = inline ? "inline" : "attachment";
+  return `${disposition}; filename="${asciiFallback}"; filename*=UTF-8''${encodedFilename}`;
 }
 
 export function createApp() {
   const app = new Hono<AppVariables>();
+
+  app.onError((err, c) => {
+    if (err instanceof HTTPException) {
+      // expected errors (401/404/...) are not reported; real failures are
+      if (err.status >= 500) {
+        Sentry.captureException(err);
+      }
+      return err.getResponse();
+    }
+
+    Sentry.captureException(err);
+    return c.json({ message: "Internal Server Error" }, 500);
+  });
   const nodeWs = createNodeWebSocket({ app });
   const { upgradeWebSocket, injectWebSocket } = nodeWs;
   const corsOriginSource = [
@@ -150,13 +165,23 @@ export function createApp() {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
+  const reflectUnconfiguredOrigins = process.env.NODE_ENV !== "production";
+
+  if (!corsOrigins && !reflectUnconfiguredOrigins) {
+    console.warn(
+      "[cors] Neither CORS_ORIGINS nor KANEO_CLIENT_URL is set, so cross-origin requests are refused. Same-origin deployments (the bundled image) are unaffected; set KANEO_CLIENT_URL if the web app is served from another origin.",
+    );
+  }
+
   app.use(
     "*",
     cors({
       credentials: true,
       origin: (origin) => {
+        // Reflecting an arbitrary origin alongside credentials lets any site
+        // read authenticated responses, so it stays a development convenience.
         if (!corsOrigins) {
-          return origin || "*";
+          return reflectUnconfiguredOrigins ? origin || "*" : null;
         }
 
         if (!origin) {
@@ -168,40 +193,37 @@ export function createApp() {
     }),
   );
 
-  const api = new Hono<ApiVariables>();
+  // Large boards return multi-MB JSON (board/task list responses embed
+  // labels and external links per task); gzip cuts that by 85-95% since
+  // JSON with repeated keys compresses extremely well.
+  app.use(compress());
+
+  const api = new OpenAPIHono<ApiVariables>();
 
   api.get("/health", (c) => {
     return c.json({ status: "ok" });
   });
 
-  api.get(
-    "/instance/status",
-    describeRoute({
+  api.openapi(
+    createRoute({
+      method: "get",
       operationId: "getInstanceStatus",
+      path: "/instance/status",
       tags: ["Instance"],
+      summary: "Get instance status",
       description:
         "Public instance setup status. When hasUsers is false the next signup becomes the instance admin.",
       security: [],
       responses: {
-        200: {
-          description: "Instance status",
-          content: {
-            "application/json": {
-              schema: resolver(
-                v.object({
-                  hasUsers: v.boolean(),
-                  hasAdmin: v.boolean(),
-                }),
-              ),
-            },
-          },
-        },
+        200: jsonResponse(
+          "Instance status",
+          z
+            .object({ hasUsers: z.boolean(), hasAdmin: z.boolean() })
+            .openapi("InstanceStatus"),
+        ),
       },
     }),
-    async (c) => {
-      const status = await getInstanceStatus();
-      return c.json(status);
-    },
+    async (c) => c.json(await getInstanceStatus(), 200),
   );
 
   const publicProjectApi = api.get("/public-project/:id", async (c) => {
@@ -224,94 +246,46 @@ export function createApp() {
     return c.json(result);
   });
 
-  api.get(
-    "/auth/get-session",
-    describeRoute({
+  api.openapi(
+    createRoute({
+      method: "get",
       operationId: "getSession",
+      path: "/auth/get-session",
       tags: ["Authentication"],
-      description: "Get the current authenticated session",
+      summary: "Get session",
+      description:
+        "Get the current authenticated session, or null when the caller is not signed in. Served by Better Auth.",
       security: [],
       responses: {
         200: {
-          description: "Current session details or null when unauthenticated",
-          content: {
-            "application/json": { schema: resolver(v.any()) },
-          },
+          description: "Current session details, or null when unauthenticated",
         },
       },
     }),
-    async (c) => {
-      const session = await auth.api.getSession({ headers: c.req.raw.headers });
-      if (!session?.user?.id) {
-        return c.json(session ?? null);
-      }
-
-      const [u] = await db
-        .select({
-          email: schema.userTable.email,
-          image: schema.userTable.image,
-          avatarUpdatedAt: schema.userTable.avatarUpdatedAt,
-        })
-        .from(schema.userTable)
-        .where(eq(schema.userTable.id, session.user.id))
-        .limit(1);
-
-      if (u) {
-        session.user.image = resolveUserDisplayImageUrl({
-          id: session.user.id,
-          email: u.email,
-          image: u.image,
-          avatarUpdatedAt: u.avatarUpdatedAt,
-        });
-      }
-
-      return c.json(session);
-    },
+    async (c) => auth.handler(c.req.raw),
   );
 
-  api.get(
-    "/user/avatar/:userId",
-    describeRoute({
-      operationId: "getUserAvatar",
-      tags: ["User"],
-      description:
-        "Profile image bytes (ETag) or redirect to Gravatar / external URL",
-      security: [],
-      responses: {
-        200: { description: "Image body" },
-        302: { description: "Redirect when no uploaded avatar" },
-        304: { description: "Not modified" },
-        404: { description: "Unknown user" },
-      },
-    }),
-    validator("param", v.object({ userId: v.string() })),
-    async (c) => {
-      const { userId } = c.req.valid("param");
-      return getUserAvatarHttpResponse(
-        userId,
-        c.req.header("If-None-Match"),
-        c.req.header("If-Modified-Since"),
-      );
-    },
-  );
-
-  api.get(
-    "/asset/:id",
-    describeRoute({
+  api.openapi(
+    createRoute({
+      method: "get",
       operationId: "getAsset",
+      path: "/asset/{id}",
       tags: ["Assets"],
-      description: "Download an uploaded asset by ID",
+      summary: "Download asset",
+      description:
+        "Download an uploaded asset. Readable without signing in only when it belongs to a public project; image types are served inline, everything else as an attachment.",
       security: [],
+      request: { params: z.object({ id: z.string() }) },
       responses: {
         200: {
           description: "The requested asset binary stream",
-          content: {
-            "*/*": { schema: resolver(v.any()) },
-          },
+          content: { "*/*": { schema: { type: "string", format: "binary" } } },
         },
+        304: { description: "Not modified" },
+        403: { description: "No access to this asset" },
+        404: { description: "Asset not found" },
       },
     }),
-    validator("param", v.object({ id: v.string() })),
     async (c) => {
       const { id } = c.req.param();
       const [asset] = await db
@@ -335,25 +309,31 @@ export function createApp() {
         throw new HTTPException(404, { message: "Asset not found" });
       }
 
-      const { userId, apiKeyId } = await resolveAssetBearerOrCookie(c);
-
-      if (userId) {
-        await validateWorkspaceAccess(userId, asset.workspaceId, apiKeyId);
-      } else if (!asset.isPublic) {
-        throw new HTTPException(401, { message: "Unauthorized" });
-      }
+      await authorizeAssetAccess(c, asset);
 
       try {
         const object = await getPrivateObject(asset.objectKey);
+        const storedContentType =
+          (object.contentType || asset.mimeType)
+            .toLowerCase()
+            .split(";")[0]
+            ?.trim() ?? "";
+        const inline = SAFE_INLINE_ASSET_TYPES.has(storedContentType);
 
         return new Response(object.body as BodyInit, {
           headers: {
             "Cache-Control": asset.isPublic
               ? "public, max-age=300"
               : "private, max-age=120",
-            "Content-Disposition": buildContentDisposition(asset.filename),
+            "Content-Disposition": buildContentDisposition(
+              asset.filename,
+              inline,
+            ),
             "Content-Length": object.contentLength?.toString() || "",
-            "Content-Type": object.contentType || asset.mimeType,
+            "Content-Type": inline
+              ? storedContentType
+              : "application/octet-stream",
+            "X-Content-Type-Options": "nosniff",
             ETag: object.etag || "",
             "Last-Modified": object.lastModified?.toUTCString() || "",
           },
@@ -365,11 +345,66 @@ export function createApp() {
     },
   );
 
+  api.openapi(
+    createRoute({
+      method: "get",
+      operationId: "getUserAvatar",
+      path: "/user/avatar/{id}",
+      tags: ["User"],
+      summary: "Download avatar",
+      description:
+        "Download a user avatar by its avatar ID. Public, immutable, and cache-friendly: the id changes whenever the avatar is replaced.",
+      security: [],
+      request: { params: z.object({ id: z.string() }) },
+      responses: {
+        200: {
+          description: "The avatar image",
+          content: {
+            "image/*": { schema: { type: "string", format: "binary" } },
+          },
+        },
+        304: { description: "Not modified" },
+        404: { description: "Avatar not found" },
+      },
+    }),
+    async (c) => {
+      const { id } = c.req.valid("param");
+      const avatar = await getAvatar(id);
+
+      if (!avatar) {
+        throw new HTTPException(404, { message: "Avatar not found" });
+      }
+
+      const etag = `"${avatar.id}"`;
+      if (c.req.header("If-None-Match") === etag) {
+        return new Response(null, { status: 304, headers: { ETag: etag } });
+      }
+
+      return new Response(new Uint8Array(avatar.data) as BodyInit, {
+        headers: {
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "Content-Length": avatar.size.toString(),
+          "Content-Type": avatar.mimeType,
+          "X-Content-Type-Options": "nosniff",
+          ETag: etag,
+          "Last-Modified": avatar.updatedAt.toUTCString(),
+        },
+      });
+    },
+  );
+
   const configApi = api.route("/config", config);
 
-  const honoOpenApiHandler = openAPIRouteHandler(api, {
-    documentation: {
-      openapi: "3.0.3",
+  api.openAPIRegistry.registerComponent("securitySchemes", "bearerAuth", {
+    type: "http",
+    scheme: "bearer",
+    description: "API key or session token (Bearer)",
+  });
+  organizationRoutes(api.openAPIRegistry);
+
+  api.get("/openapi", (c) => {
+    const document = api.getOpenAPI31Document({
+      openapi: "3.1.0",
       info: {
         title: "Kaneo API",
         version: "1.0.0",
@@ -384,103 +419,78 @@ export function createApp() {
           description: "Kaneo API Server",
         },
       ],
-      components: {
-        securitySchemes: {
-          bearerAuth: {
-            type: "http",
-            scheme: "bearer",
-            description: "API key or session token (Bearer)",
-          },
-        },
-      },
       security: [{ bearerAuth: [] }],
-    },
-  });
+    });
 
-  api.get("/openapi", async (c) => {
-    const maybeResponse = await honoOpenApiHandler(c, async () => {});
-    const honoSpecResponse = maybeResponse ?? c.res;
-    const honoSpec = (await honoSpecResponse.json()) as Record<string, unknown>;
-
-    let authSpec: Record<string, unknown> = {};
-    try {
-      authSpec = (await auth.api.generateOpenAPISchema()) as Record<
+    // Every authenticated route sits behind the same app-wide
+    // authenticateApiRequest middleware, so the shared 401 is injected here
+    // rather than repeated on all ~120 route definitions. Routes that opt out
+    // of auth declare `security: []` and are skipped.
+    const httpMethods = [
+      "get",
+      "post",
+      "put",
+      "delete",
+      "patch",
+      "options",
+      "head",
+      "trace",
+    ];
+    const paths = (document.paths ?? {}) as Record<
+      string,
+      Record<
         string,
-        unknown
-      >;
-    } catch (error) {
-      console.error("Failed to generate Better Auth OpenAPI schema:", error);
+        { responses?: Record<string, unknown>; security?: unknown[] }
+      >
+    >;
+    for (const operations of Object.values(paths)) {
+      for (const [method, operation] of Object.entries(operations)) {
+        if (!httpMethods.includes(method) || !operation.responses) continue;
+        if (
+          Array.isArray(operation.security) &&
+          operation.security.length === 0
+        ) {
+          continue;
+        }
+        operation.responses["401"] ??= {
+          description: "Missing or invalid credentials",
+        };
+      }
     }
 
-    const normalizedAuthSpec = normalizeOrganizationAuthOperations(authSpec);
-    return c.json(
-      ensureOperationSummaries(
-        dedupeOperationIds(
-          markOptionalSchemaFieldsNullable(
-            normalizeNullableSchemasForOpenApi30(
-              normalizeEmptyAndEnumSchemas(
-                normalizeEmptyRequiredArrays(
-                  normalizeMalformedPropertySchemas(
-                    mergeOpenApiSpecs(honoSpec, normalizedAuthSpec),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+    return c.json(document);
   });
 
   // Better Auth serves GET /auth/device as JSON. Browsers that open the API URL
-  // directly expect a page — redirect full document navigations to the web app.
-  const authDeviceQuerySchema = v.object({
-    user_code: v.optional(v.string()),
-    ui: v.optional(v.picklist(["1"])),
+  // directly expect a page, so redirect full document navigations to the web app.
+  const authDeviceQuerySchema = z.object({
+    user_code: z.string().optional().openapi({
+      description: "The device authorization user code.",
+    }),
+    ui: z.enum(["1"]).optional().openapi({
+      description:
+        "Force a redirect to the web UI, for clients that do not send Sec-Fetch-* headers.",
+    }),
   });
 
-  api.get(
-    "/auth/device",
-    describeRoute({
+  api.openapi(
+    createRoute({
+      method: "get",
       operationId: "getDeviceAuthorizationPage",
+      path: "/auth/device",
       tags: ["Authentication"],
+      summary: "Device authorization page",
       description:
-        "Redirect browser-based device authorization requests to the web UI",
+        "Better Auth serves this as JSON. A top-level browser navigation is redirected to the web app's device screen instead, so opening the URL by hand shows a page rather than a JSON blob.",
       security: [],
-      parameters: [
-        {
-          name: "user_code",
-          in: "query",
-          required: false,
-          schema: {
-            type: "string",
-          },
-          description: "The device authorization user code.",
-        },
-        {
-          name: "ui",
-          in: "query",
-          required: false,
-          schema: {
-            type: "string",
-            enum: ["1"],
-          },
-          description: "Force a redirect to the web UI.",
-        },
-      ],
+      request: { query: authDeviceQuerySchema },
       responses: {
         302: {
           description: "Redirects the browser to the web app device screen",
         },
-        200: {
-          description: "Device authorization payload from Better Auth",
-          content: {
-            "application/json": { schema: resolver(v.any()) },
-          },
-        },
+        200: { description: "Device authorization payload from Better Auth" },
       },
     }),
-    validator("query", authDeviceQuerySchema),
     async (c) => {
       const { user_code: userCode, ui } = c.req.valid("query");
       const secFetchDest = c.req.header("Sec-Fetch-Dest");
@@ -501,12 +511,12 @@ export function createApp() {
     },
   );
 
-  api.on(["POST", "GET", "PUT", "DELETE"], "/auth/*", async (c) => {
+  api.on(["POST", "GET", "PUT", "PATCH", "DELETE"], "/auth/*", async (c) => {
     const authHeader = c.req.header("Authorization");
     const apiKeyHeader = c.req.header("x-api-key");
-    const bearerMatch = authHeader?.match(/^Bearer\s+(\S+)$/i);
+    const bearerToken = authHeader?.match(/^Bearer\s+(\S+)$/i)?.[1];
 
-    if (bearerMatch && !apiKeyHeader) {
+    if (bearerToken && !apiKeyHeader) {
       const session = await auth.api.getSession({
         headers: c.req.raw.headers,
       });
@@ -519,7 +529,7 @@ export function createApp() {
       const headers = new Headers(c.req.raw.headers);
 
       // Better Auth API key plugin validates from x-api-key by default.
-      headers.set("x-api-key", bearerMatch[1]);
+      headers.set("x-api-key", bearerToken);
 
       return auth.handler(
         new Request(c.req.raw, {
@@ -535,28 +545,36 @@ export function createApp() {
 
   api.use("*", async (c, next) => {
     const path = c.req.path;
-    if (path.startsWith("/api/mcp") || path.startsWith("/api/.well-known/")) {
+    if (
+      path.startsWith("/api/mcp") ||
+      path.startsWith("/api/.well-known/") ||
+      path === "/api/billing/webhook"
+    ) {
       return next();
     }
-    try {
-      await authenticateApiRequest(c);
-    } catch (error) {
-      if (error instanceof HTTPException) {
+    return Sentry.withIsolationScope(async () => {
+      Sentry.setUser(null);
+      try {
+        await authenticateApiRequest(c);
+        const windowId = c.req.header("X-Kaneo-Window-Id");
+        const userId = c.get("userId");
+        const initiatorId = windowId ? `${userId}:${windowId}` : userId;
+        return await eventContext.run({ initiatorId }, next);
+      } catch (error) {
+        if (!(error instanceof HTTPException)) {
+          console.error("API authentication failed:", error);
+          throw new HTTPException(500, { message: "Internal Server Error" });
+        }
         throw error;
+      } finally {
+        Sentry.setUser(null);
       }
-      console.error("API authentication failed:", error);
-      throw new HTTPException(500, { message: "Internal Server Error" });
-    }
-
-    const windowId = c.req.header("X-Kaneo-Window-Id");
-    const userId = c.get("userId");
-    const initiatorId = windowId ? `${userId}:${windowId}` : userId;
-
-    return eventContext.run({ initiatorId }, next);
+    });
   });
 
   const oauthApi = api.route("/oauth", oauth);
 
+  const billingApi = api.route("/billing", billing);
   const projectApi = api.route("/project", project);
   const taskApi = api.route("/task", task);
   const columnApi = api.route("/column", column);
@@ -605,7 +623,7 @@ export function createApp() {
     ),
   );
 
-  // User-scoped WebSocket endpoint — MUST be registered before /ws/:projectId
+  // User-scoped WebSocket endpoint; MUST be registered before /ws/:projectId
   // so the literal path "user" isn't consumed by the param route.
   api.get(
     "/ws/user",
@@ -640,7 +658,7 @@ export function createApp() {
             if (raw) {
               const msg = JSON.parse(raw) as { type?: string };
               if (msg?.type === "ping") {
-                // keepalive — no-op
+                // keepalive, no-op
               }
             }
           } catch {
@@ -734,6 +752,7 @@ export function createApp() {
     api,
     injectWebSocket,
     activityApi,
+    billingApi,
     columnApi,
     commentApi,
     configApi,
@@ -755,9 +774,9 @@ export function createApp() {
     taskRelationApi,
     telegramIntegrationApi,
     timeEntryApi,
+    userApi,
     workflowRuleApi,
     workspaceApi,
-    userApi,
     oauthApi,
   };
 }
@@ -783,8 +802,9 @@ export async function runStartupTasks() {
       });
       console.log("✅ Database migrated successfully!");
 
-      await migrateRbacAndAvatarSchema();
+      await migrateRbacSchema();
       await migrateFkSupportingSchema();
+      await migrateForkAvatarBlobs();
     },
   });
 
@@ -854,6 +874,7 @@ const {
   app,
   injectWebSocket,
   activityApi,
+  billingApi,
   columnApi,
   commentApi,
   configApi,
@@ -875,21 +896,24 @@ const {
   taskRelationApi,
   telegramIntegrationApi,
   timeEntryApi,
+  userApi,
   workflowRuleApi,
   workspaceApi,
-  userApi,
   oauthApi,
 } = createdApp;
 
+const entrypoint = process.argv[1];
 const isMainModule =
-  Boolean(process.argv[1]) &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
+  entrypoint !== undefined &&
+  entrypoint !== "" &&
+  import.meta.url === pathToFileURL(entrypoint).href;
 
 if (isMainModule) {
   void startServer(injectWebSocket);
 }
 
 export type AppType =
+  | typeof billingApi
   | typeof configApi
   | typeof projectApi
   | typeof taskApi

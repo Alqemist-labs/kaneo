@@ -5,14 +5,15 @@ import { ColumnHeader } from "./column-header";
 
 type ColumnProps = {
   column: ProjectWithTasks["columns"][number];
+  disableDragDrop?: boolean;
 };
 
-function Column({ column }: ColumnProps) {
+function Column({ column, disableDragDrop = false }: ColumnProps) {
   const [isDropzoneOver, setIsDropzoneOver] = useState(false);
 
   return (
     <div
-      className={`group relative flex h-full min-h-0 w-full flex-col rounded-xl border transition-all duration-300 ease-out ${
+      className={`group relative flex h-full min-h-0 w-full flex-col rounded-xl border transition-colors duration-150 ${
         isDropzoneOver
           ? "border-ring/40 bg-accent/60 shadow-md ring-2 ring-ring/30"
           : "border-border/70 bg-muted/40 shadow-xs/5 hover:border-border/90 dark:bg-card/90"
@@ -22,7 +23,11 @@ function Column({ column }: ColumnProps) {
         <ColumnHeader column={column} />
       </div>
       <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-2 py-1 [-webkit-overflow-scrolling:touch]">
-        <ColumnDropzone column={column} onIsOverChange={setIsDropzoneOver} />
+        <ColumnDropzone
+          column={column}
+          disableDragDrop={disableDragDrop}
+          onIsOverChange={setIsDropzoneOver}
+        />
       </div>
     </div>
   );

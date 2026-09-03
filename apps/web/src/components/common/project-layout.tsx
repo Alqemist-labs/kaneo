@@ -1,5 +1,11 @@
 import { useLocation, useNavigate } from "@tanstack/react-router";
-import { CalendarDays, SquareKanban, SquircleDashed, Tags } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarRange,
+  SquareKanban,
+  SquircleDashed,
+  Tags,
+} from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { useTranslation } from "react-i18next";
 import MobileProjectNav from "@/components/common/header/mobile-project-nav";
@@ -27,7 +33,7 @@ type ProjectLayoutProps = {
   headerActions?: ReactNode;
   children: ReactNode;
   showViewSwitcher?: boolean;
-  activeView?: "backlog" | "board" | "gantt" | "labels";
+  activeView?: "backlog" | "board" | "calendar" | "gantt" | "labels";
 };
 
 export default function ProjectLayout({
@@ -51,11 +57,13 @@ export default function ProjectLayout({
     activeView ??
     (location.pathname.includes("/backlog")
       ? "backlog"
-      : location.pathname.includes("/gantt")
-        ? "gantt"
-        : location.pathname.includes("/labels")
-          ? "labels"
-          : "board");
+      : location.pathname.includes("/calendar")
+        ? "calendar"
+        : location.pathname.includes("/gantt")
+          ? "gantt"
+          : location.pathname.includes("/labels")
+            ? "labels"
+            : "board");
 
   const handleNavigateToBacklog = () => {
     navigate({
@@ -67,6 +75,13 @@ export default function ProjectLayout({
   const handleNavigateToBoard = () => {
     navigate({
       to: "/dashboard/workspace/$workspaceId/project/$projectId/board",
+      params: { workspaceId, projectId },
+    });
+  };
+
+  const handleNavigateToCalendar = () => {
+    navigate({
+      to: "/dashboard/workspace/$workspaceId/project/$projectId/calendar",
       params: { workspaceId, projectId },
     });
   };
@@ -90,11 +105,13 @@ export default function ProjectLayout({
       to:
         resolvedView === "backlog"
           ? "/dashboard/workspace/$workspaceId/project/$projectId/backlog"
-          : resolvedView === "gantt"
-            ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
-            : resolvedView === "labels"
-              ? "/dashboard/workspace/$workspaceId/project/$projectId/labels"
-              : "/dashboard/workspace/$workspaceId/project/$projectId/board",
+          : resolvedView === "calendar"
+            ? "/dashboard/workspace/$workspaceId/project/$projectId/calendar"
+            : resolvedView === "gantt"
+              ? "/dashboard/workspace/$workspaceId/project/$projectId/gantt"
+              : resolvedView === "labels"
+                ? "/dashboard/workspace/$workspaceId/project/$projectId/labels"
+                : "/dashboard/workspace/$workspaceId/project/$projectId/board",
       params: {
         workspaceId,
         projectId: nextProjectId,
@@ -147,6 +164,7 @@ export default function ProjectLayout({
                 activeView={resolvedView}
                 onSelectBacklog={handleNavigateToBacklog}
                 onSelectBoard={handleNavigateToBoard}
+                onSelectCalendar={handleNavigateToCalendar}
                 onSelectGantt={handleNavigateToGantt}
                 onSelectLabels={handleNavigateToLabels}
                 onSelectProject={handleProjectSwitch}
@@ -179,6 +197,18 @@ export default function ProjectLayout({
                 >
                   <SquareKanban className="size-3.5" />
                   {t("tasks:projectNav.tasks")}
+                </Button>
+                <Button
+                  variant={resolvedView === "calendar" ? "secondary" : "ghost"}
+                  size="xs"
+                  onClick={handleNavigateToCalendar}
+                  className={cn(
+                    "h-6 gap-1.5 rounded-md px-2 text-xs",
+                    resolvedView !== "calendar" && "text-muted-foreground",
+                  )}
+                >
+                  <CalendarRange className="size-3.5" />
+                  {t("tasks:calendar.title")}
                 </Button>
                 <Button
                   variant={resolvedView === "gantt" ? "secondary" : "ghost"}
