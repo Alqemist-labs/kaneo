@@ -1,6 +1,6 @@
 {
 	"common": {
-		"appName": "Kaneo",
+		"appName": "Alqemist Tickets",
 		"actions": {
 			"cancel": "취소",
 			"close": "닫기",
