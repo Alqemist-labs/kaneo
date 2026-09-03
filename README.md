@@ -6,7 +6,7 @@ It builds on top of Kaneo and adds changes tailored to our internal usage.
 
 ## Added Features
 
-- Custom user avatars, with upload, removal, and display across the app.
+- Gravatar fallback for members who have not uploaded a profile picture.
 - Workspace-level activity feed.
 - Dedicated project labels view, with status-based statistics.
 - Label and filter improvements across board, backlog, gantt, search, and task views.
@@ -33,7 +33,7 @@ The image is built from `Dockerfile.kaneo` and published automatically on pushes
 
 ## Original README
 
-The upstream Kaneo README (v2.9.0) is preserved here: [README.upstream.md](README.upstream.md).
+The upstream Kaneo README (v2.22.0) is preserved here: [README.upstream.md](README.upstream.md).
 
 ## License
 
