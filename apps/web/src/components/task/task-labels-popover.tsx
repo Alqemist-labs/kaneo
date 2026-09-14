@@ -16,6 +16,7 @@ import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-wor
 import { useWorkspacePermission } from "@/hooks/use-workspace-permission";
 import { cn } from "@/lib/cn";
 import { getTaskLabelOptions } from "@/lib/get-task-label-options";
+import { resolveLabelColor } from "@/lib/label-color";
 import { toast } from "@/lib/toast";
 import type Task from "@/types/task";
 
@@ -231,9 +232,7 @@ export default function TaskLabelsPopover({
             <span
               className="size-2 shrink-0 rounded-full"
               style={{
-                backgroundColor:
-                  labelColors.find((c) => c.value === label.color)?.color ||
-                  "var(--color-neutral-400)",
+                backgroundColor: resolveLabelColor(label.color),
               }}
             />
             <span className="min-w-0 flex-1 break-words">{label.name}</span>

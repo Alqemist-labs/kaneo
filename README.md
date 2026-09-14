@@ -33,7 +33,7 @@ The image is built from `Dockerfile.kaneo` and published automatically on pushes
 
 ## Original README
 
-The upstream Kaneo README (v2.22.0) is preserved here: [README.upstream.md](README.upstream.md).
+The upstream Kaneo README (v2.24.0) is preserved here: [README.upstream.md](README.upstream.md).
 
 ## License
 

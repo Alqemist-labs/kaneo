@@ -14,4 +14,20 @@ describe("TaskLabels", () => {
 
     expect(screen.getByText("Bug")).toBeVisible();
   });
+
+  it("uses the card width instead of an arbitrary label-name cap", () => {
+    const name = "Client: Totem";
+    render(<TaskLabels labels={[{ id: "label-1", name, color: "purple" }]} />);
+
+    const labelName = screen.getByText(name);
+    const badge = labelName.closest('[data-slot="badge"]');
+    expect(labelName).not.toHaveClass("max-w-20");
+    // The fork wraps long names onto new lines instead of truncating them.
+    expect(labelName).toHaveClass("min-w-0", "break-words");
+    expect(labelName).toHaveAttribute("title", name);
+    expect(badge).toHaveClass("max-w-full", "min-w-0");
+    expect(badge?.querySelector('[aria-hidden="true"]')).toHaveClass(
+      "shrink-0",
+    );
+  });
 });

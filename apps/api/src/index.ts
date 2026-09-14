@@ -20,6 +20,7 @@ import billing from "./billing";
 import column from "./column";
 import comment from "./comment";
 import config from "./config";
+import customField from "./custom-field";
 import db, { getDatabase, schema } from "./database";
 import { prepareDatabaseStartup } from "./database/prepare-database-startup";
 import { waitForDatabase } from "./database/wait-for-database";
@@ -34,6 +35,7 @@ import githubIntegration, {
 import getInstanceStatus from "./instance/controllers/get-instance-status";
 import invitation from "./invitation";
 import label from "./label";
+import mattermostIntegration from "./mattermost-integration";
 import mcpRoutes, { mcpWellKnownRoutes } from "./mcp";
 import { migrateColumns } from "./migrations/column-migration";
 import notification from "./notification";
@@ -601,6 +603,10 @@ export function createApp() {
     "/discord-integration",
     discordIntegration,
   );
+  const mattermostIntegrationApi = api.route(
+    "/mattermost-integration",
+    mattermostIntegration,
+  );
   const slackIntegrationApi = api.route("/slack-integration", slackIntegration);
   const telegramIntegrationApi = api.route(
     "/telegram-integration",
@@ -611,6 +617,7 @@ export function createApp() {
   const workflowRuleApi = api.route("/workflow-rule", workflowRule);
   const invitationApi = api.route("/invitation", invitation);
   const workspaceApi = api.route("/workspace", workspace);
+  const customFieldApi = api.route("/custom-field", customField);
   const userApi = api.route("/user", user);
 
   app.route(
@@ -769,6 +776,7 @@ export function createApp() {
     projectApi,
     publicProjectApi,
     searchApi,
+    mattermostIntegrationApi,
     slackIntegrationApi,
     taskApi,
     taskRelationApi,
@@ -777,6 +785,7 @@ export function createApp() {
     userApi,
     workflowRuleApi,
     workspaceApi,
+    customFieldApi,
     oauthApi,
   };
 }
@@ -886,6 +895,7 @@ const {
   invitationApi,
   invitationPublicApi,
   labelApi,
+  mattermostIntegrationApi,
   notificationApi,
   notificationPreferencesApi,
   projectApi,
@@ -899,6 +909,7 @@ const {
   userApi,
   workflowRuleApi,
   workspaceApi,
+  customFieldApi,
   oauthApi,
 } = createdApp;
 
@@ -929,6 +940,7 @@ export type AppType =
   | typeof giteaIntegrationApi
   | typeof genericWebhookIntegrationApi
   | typeof discordIntegrationApi
+  | typeof mattermostIntegrationApi
   | typeof slackIntegrationApi
   | typeof telegramIntegrationApi
   | typeof taskRelationApi
@@ -936,6 +948,7 @@ export type AppType =
   | typeof workflowRuleApi
   | typeof invitationApi
   | typeof workspaceApi
+  | typeof customFieldApi
   | typeof userApi
   | typeof publicProjectApi
   | typeof invitationPublicApi

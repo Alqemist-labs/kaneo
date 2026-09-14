@@ -131,28 +131,28 @@ function getAuthEmailCopy(locale?: string | null) {
 
   if (localeKey === "de") {
     return {
-      magicLinkSubject: "Anmeldelink fuer Kaneo",
-      otpSubject: "Bestaetigungscode fuer Kaneo",
+      magicLinkSubject: "Anmeldelink fuer Alqemist Tickets",
+      otpSubject: "Bestaetigungscode fuer Alqemist Tickets",
     };
   }
 
   if (localeKey === "vi") {
     return {
-      magicLinkSubject: "Liên kết đăng nhập Kaneo",
-      otpSubject: "Mã xác minh Kaneo",
+      magicLinkSubject: "Liên kết đăng nhập Alqemist Tickets",
+      otpSubject: "Mã xác minh Alqemist Tickets",
     };
   }
 
   if (localeKey === "ja") {
     return {
-      magicLinkSubject: "Kaneo ログインリンク",
-      otpSubject: "Kaneo 認証コード",
+      magicLinkSubject: "Alqemist Tickets ログインリンク",
+      otpSubject: "Alqemist Tickets 認証コード",
     };
   }
 
   return {
-    magicLinkSubject: "Login for Kaneo",
-    otpSubject: "Authentication code for Kaneo",
+    magicLinkSubject: "Login for Alqemist Tickets",
+    otpSubject: "Authentication code for Alqemist Tickets",
   };
 }
 
