@@ -50,6 +50,7 @@ function RouteComponent() {
     filters,
     updateFilter,
     updateLabelFilter,
+    updateCustomFieldFilter,
     filteredProject,
     hasActiveFilters,
     clearFilters,
@@ -150,6 +151,7 @@ function RouteComponent() {
             filters={filters}
             updateFilter={updateFilter}
             updateLabelFilter={updateLabelFilter}
+            updateCustomFieldFilter={updateCustomFieldFilter}
             clearFilters={clearFilters}
             hasActiveFilters={hasActiveFilters}
             users={users}
