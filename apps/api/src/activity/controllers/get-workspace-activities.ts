@@ -1,75 +1,133 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import db from "../../database";
-import { activityTable, projectTable, taskTable } from "../../database/schema";
+import { redactInaccessibleMoves } from "../redact-inaccessible-moves";
+import {
+  activityTable,
+  columnTable,
+  projectTable,
+  taskTable,
+  userTable,
+} from "../../database/schema";
+import { projectAccessCondition } from "../../project-access/project-access-condition";
+import { commentExcerpt } from "../comment-excerpt";
 
-type GetWorkspaceActivitiesOptions = {
-  limit: number;
-  offset: number;
-};
+export const WORKSPACE_ACTIVITY_LIMIT = 20;
 
-export default async function getWorkspaceActivities(
-  workspaceId: string,
-  options: GetWorkspaceActivitiesOptions,
-) {
-  const { limit, offset } = options;
+// The feed is "what happened lately". The window also keeps the scan bounded
+// in workspaces with years of history.
+const WINDOW_DAYS = 30;
+
+async function getWorkspaceActivities(workspaceId: string, userId: string) {
+  const since = new Date(Date.now() - WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+  // Concrete project IDs let PostgreSQL estimate task selectivity before it
+  // chooses an activity index. A join-only workspace filter can instead scan
+  // every tenant's recent events to fill a quiet workspace's small feed.
+  const projects = await db
+    .select({ id: projectTable.id })
+    .from(projectTable)
+    .where(
+      and(
+        eq(projectTable.workspaceId, workspaceId),
+        isNull(projectTable.archivedAt),
+        projectAccessCondition(userId, projectTable.id),
+      ),
+    );
+  if (!projects.length) return [];
 
   const rows = await db
     .select({
       id: activityTable.id,
-      taskId: activityTable.taskId,
       type: activityTable.type,
       createdAt: activityTable.createdAt,
-      updatedAt: activityTable.updatedAt,
-      userId: activityTable.userId,
       content: activityTable.content,
       eventData: activityTable.eventData,
+      userId: activityTable.userId,
+      userName: userTable.name,
+      userImage: userTable.image,
       externalUserName: activityTable.externalUserName,
       externalUserAvatar: activityTable.externalUserAvatar,
-      externalSource: activityTable.externalSource,
-      externalUrl: activityTable.externalUrl,
+      taskId: taskTable.id,
       taskTitle: taskTable.title,
       taskNumber: taskTable.number,
       projectId: projectTable.id,
-      projectName: projectTable.name,
       projectSlug: projectTable.slug,
     })
     .from(activityTable)
     .innerJoin(taskTable, eq(activityTable.taskId, taskTable.id))
     .innerJoin(projectTable, eq(taskTable.projectId, projectTable.id))
-    .where(eq(projectTable.workspaceId, workspaceId))
-    .orderBy(desc(activityTable.createdAt))
-    .limit(limit)
-    .offset(offset);
+    .leftJoin(userTable, eq(activityTable.userId, userTable.id))
+    .where(
+      and(
+        eq(projectTable.workspaceId, workspaceId),
+        sql`${taskTable.projectId} = ANY(${sql.param(projects.map((project) => project.id))}::text[])`,
+        isNull(projectTable.archivedAt),
+        gte(activityTable.createdAt, since),
+      ),
+    )
+    .orderBy(desc(activityTable.createdAt), desc(activityTable.id))
+    .limit(WORKSPACE_ACTIVITY_LIMIT);
 
-  return rows.map((row) => {
-    let content = row.content;
-    if (content) {
-      content = content.replace(/\n+/g, "\n");
-    }
+  const statusChanges = rows.filter((row) => row.type === "status_changed");
+  const statusSlugs = [
+    ...new Set(
+      statusChanges.flatMap((row) => {
+        const data = statusData(row.eventData);
+        return [data?.oldStatus, data?.newStatus].filter(
+          (value): value is string => typeof value === "string",
+        );
+      }),
+    ),
+  ];
+  const columns = statusSlugs.length
+    ? await db
+        .select({
+          projectId: columnTable.projectId,
+          slug: columnTable.slug,
+          name: columnTable.name,
+        })
+        .from(columnTable)
+        .innerJoin(projectTable, eq(columnTable.projectId, projectTable.id))
+        .where(
+          and(
+            eq(projectTable.workspaceId, workspaceId),
+            inArray(columnTable.projectId, [
+              ...new Set(statusChanges.map((row) => row.projectId)),
+            ]),
+            inArray(columnTable.slug, statusSlugs),
+          ),
+        )
+    : [];
 
+  const activities = rows.map(({ content, ...row }) => {
+    const data =
+      row.type === "status_changed" ? statusData(row.eventData) : null;
+    const nameOf = (slug: unknown) => {
+      const matching = columns.filter(
+        (column) => column.projectId === row.projectId && column.slug === slug,
+      );
+      // Historical events only store slugs. Duplicates cannot identify a column.
+      return matching.length === 1 ? matching[0]?.name : undefined;
+    };
     return {
-      id: row.id,
-      taskId: row.taskId,
-      type: row.type,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      userId: row.userId,
-      content,
-      eventData: row.eventData,
-      externalUserName: row.externalUserName,
-      externalUserAvatar: row.externalUserAvatar,
-      externalSource: row.externalSource,
-      externalUrl: row.externalUrl,
-      task: {
-        id: row.taskId,
-        title: row.taskTitle,
-        number: row.taskNumber,
-      },
-      project: {
-        id: row.projectId,
-        name: row.projectName,
-        slug: row.projectSlug,
-      },
+      ...row,
+      eventData: data
+        ? {
+            ...data,
+            oldStatusName: nameOf(data.oldStatus),
+            newStatusName: nameOf(data.newStatus),
+          }
+        : row.eventData,
+      excerpt: commentExcerpt(content),
     };
   });
+  return redactInaccessibleMoves(userId, activities);
 }
+
+function statusData(value: unknown): Record<string, unknown> | null {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export default getWorkspaceActivities;

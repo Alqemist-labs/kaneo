@@ -11,25 +11,13 @@ import {
   userTable,
   workspaceTable,
 } from "../database/schema";
-import { assertPublicWebhookDestination } from "../plugins/generic-webhook/config";
+import { canReceiveResourceNotification } from "../notification/resource-access";
+import {
+  safeOutboundError,
+  sendOutboundRequest,
+} from "../utils/outbound-request";
+import { resolveEmailTask } from "./resolve-email-task";
 import { decryptSecret } from "./secrets";
-
-const DEFAULT_OUTBOUND_FETCH_TIMEOUT_MS = 15_000;
-
-async function fetchWithTimeout(
-  url: string,
-  init: RequestInit & { timeoutMs?: number },
-): Promise<Response> {
-  const timeoutMs = init.timeoutMs ?? DEFAULT_OUTBOUND_FETCH_TIMEOUT_MS;
-  const { timeoutMs: _timeout, ...rest } = init;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...rest, signal: controller.signal });
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 type ResolvedNotificationContext = {
   workspaceId: string;
@@ -46,9 +34,12 @@ type DeliveryContent = {
   body: string;
 };
 
+function getClientUrl() {
+  return process.env.KANEO_CLIENT_URL || "http://localhost:5173";
+}
+
 function buildTaskUrl(workspaceId: string, projectId: string, taskId: string) {
-  const clientUrl = process.env.KANEO_CLIENT_URL || "http://localhost:5173";
-  return `${clientUrl}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${taskId}`;
+  return `${getClientUrl()}/dashboard/workspace/${workspaceId}/project/${projectId}/task/${taskId}`;
 }
 
 function getStringValue(
@@ -100,7 +91,7 @@ function buildDeliveryContent(notification: {
         title: "New task created",
         body: taskTitle
           ? `A new task was created: ${taskTitle}`
-          : "A new task was created in Alqemist Tickets.",
+          : "A new task was created in Kaneo.",
       };
     }
     case "workspace_created": {
@@ -112,7 +103,7 @@ function buildDeliveryContent(notification: {
         title: "Workspace created",
         body: workspaceName
           ? `Workspace created: ${workspaceName}`
-          : "A new workspace was created in Alqemist Tickets.",
+          : "A new workspace was created in Kaneo.",
       };
     }
     case "task_status_changed": {
@@ -124,7 +115,7 @@ function buildDeliveryContent(notification: {
         body:
           taskTitle && oldStatus && newStatus
             ? `${taskTitle} moved from ${oldStatus} to ${newStatus}.`
-            : "A task status changed in Alqemist Tickets.",
+            : "A task status changed in Kaneo.",
       };
     }
     case "task_assignee_changed": {
@@ -133,7 +124,7 @@ function buildDeliveryContent(notification: {
         title: "Task assigned to you",
         body: taskTitle
           ? `You were assigned to ${taskTitle}.`
-          : "A task was assigned to you in Alqemist Tickets.",
+          : "A task was assigned to you in Kaneo.",
       };
     }
     case "time_entry_created": {
@@ -142,7 +133,7 @@ function buildDeliveryContent(notification: {
         title: "Time entry created",
         body: taskTitle
           ? `A time entry was created for ${taskTitle}.`
-          : "A time entry was created in Alqemist Tickets.",
+          : "A time entry was created in Kaneo.",
       };
     }
     case "due_date_reminder": {
@@ -178,7 +169,7 @@ function buildDeliveryContent(notification: {
           : "You were mentioned",
         body: taskTitle
           ? `You were mentioned in ${taskTitle}.`
-          : "You were mentioned in a Alqemist Tickets task.",
+          : "You were mentioned in a Kaneo task.",
       };
     }
     case "task_comment": {
@@ -193,15 +184,13 @@ function buildDeliveryContent(notification: {
           : "New task comment",
         body: taskTitle
           ? `A new comment was added to ${taskTitle}.`
-          : "A new comment was added to a Alqemist Tickets task.",
+          : "A new comment was added to a Kaneo task.",
       };
     }
     default:
       return {
-        title: notification.title ?? "New Alqemist Tickets notification",
-        body:
-          notification.content ??
-          "You have a new notification in Alqemist Tickets.",
+        title: notification.title ?? "New Kaneo notification",
+        body: notification.content ?? "You have a new notification in Kaneo.",
       };
   }
 }
@@ -284,26 +273,21 @@ async function sendNtfyNotification(input: {
   body: string;
   clickUrl?: string | null;
 }) {
-  await assertPublicWebhookDestination(input.serverUrl);
-
-  const response = await fetchWithTimeout(
+  await sendOutboundRequest(
     `${input.serverUrl.replace(/\/+$/, "")}/${encodeURIComponent(input.topic)}`,
     {
-      method: "POST",
       headers: {
         ...(input.token ? { Authorization: `Bearer ${input.token}` } : {}),
         ...(input.clickUrl ? { Click: input.clickUrl } : {}),
-        Title: input.title,
+        // fetch rejects header values outside Latin-1, so send non-ASCII titles RFC 2047 encoded; ntfy decodes them.
+        Title: /^[\x20-\x7e]*$/.test(input.title)
+          ? input.title
+          : `=?UTF-8?B?${Buffer.from(input.title).toString("base64")}?=`,
       },
       body: input.body,
     },
+    { publicDestination: true, timeoutMs: 15_000 },
   );
-
-  if (!response.ok) {
-    throw new Error(
-      `ntfy delivery failed (${response.status}): ${await response.text()}`,
-    );
-  }
 }
 
 async function sendGotifyNotification(input: {
@@ -313,15 +297,12 @@ async function sendGotifyNotification(input: {
   body: string;
   clickUrl?: string | null;
 }) {
-  await assertPublicWebhookDestination(input.serverUrl);
-
   // Gotify expects the app token in the query string; that can surface in logs, proxies, and browser history, so factor this into Gotify placement and log handling.
-  const response = await fetchWithTimeout(
+  await sendOutboundRequest(
     `${input.serverUrl.replace(/\/+$/, "")}/message?token=${encodeURIComponent(
       input.token,
     )}`,
     {
-      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
@@ -343,13 +324,8 @@ async function sendGotifyNotification(input: {
           : undefined,
       }),
     },
+    { publicDestination: true, timeoutMs: 15_000 },
   );
-
-  if (!response.ok) {
-    throw new Error(
-      `Gotify delivery failed (${response.status}): ${await response.text()}`,
-    );
-  }
 }
 
 async function sendWebhookNotification(input: {
@@ -357,8 +333,6 @@ async function sendWebhookNotification(input: {
   secret?: string | null;
   payload: Record<string, unknown>;
 }) {
-  await assertPublicWebhookDestination(input.webhookUrl);
-
   const body = JSON.stringify(input.payload);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -370,17 +344,11 @@ async function sendWebhookNotification(input: {
       .digest("hex");
   }
 
-  const response = await fetchWithTimeout(input.webhookUrl, {
-    method: "POST",
-    headers,
-    body,
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `Webhook delivery failed (${response.status}): ${await response.text()}`,
-    );
-  }
+  await sendOutboundRequest(
+    input.webhookUrl,
+    { headers, body },
+    { publicDestination: true, timeoutMs: 15_000 },
+  );
 }
 
 export async function deliverNotification(
@@ -390,7 +358,14 @@ export async function deliverNotification(
     where: eq(notificationTable.id, notificationId),
   });
 
-  if (!notification) {
+  if (
+    !notification ||
+    !(await canReceiveResourceNotification(
+      notification.userId,
+      notification.resourceId,
+      notification.resourceType,
+    ))
+  ) {
     return;
   }
 
@@ -508,14 +483,24 @@ export async function deliverNotification(
   const deliveries: Array<Promise<void>> = [];
 
   if (decryptedPreference.emailEnabled && rule.emailEnabled && user.email) {
+    const recipient = user.email;
     deliveries.push(
-      sendNotificationEmail(user.email, content.title, {
-        title: content.title,
-        message: content.body,
-        actionUrl: context.taskUrl,
-        actionLabel: context.taskUrl ? "Open in Alqemist Tickets" : undefined,
-        locale: user.locale ?? null,
-      }).then(() => undefined),
+      (async () => {
+        const task = context.taskId
+          ? await resolveEmailTask(context.taskId)
+          : undefined;
+        await sendNotificationEmail(recipient, content.title, {
+          title: content.title,
+          message: content.body,
+          actionUrl: context.taskUrl,
+          locale: user.locale ?? null,
+          breadcrumb: context.projectName
+            ? `${context.workspaceName} / ${context.projectName}`
+            : context.workspaceName,
+          task,
+          settingsUrl: `${getClientUrl()}/dashboard/settings/account/notifications`,
+        });
+      })(),
     );
   }
 
@@ -573,7 +558,7 @@ export async function deliverNotification(
     if (result.status === "rejected") {
       console.error("Notification delivery failed", {
         notificationId,
-        error: result.reason,
+        error: safeOutboundError(result.reason),
       });
     }
   }

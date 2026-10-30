@@ -11,6 +11,7 @@ export type BoardFilters = {
   dueDate: string[] | null;
   labels: string[] | null;
   customFields: Record<string, string[]> | null;
+  negated?: string[] | null;
 };
 
 export const DUE_DATE_FILTER_VALUES = {
@@ -90,7 +91,11 @@ export function useTaskFilters(
 
   useEffect(() => {
     if (!storageKey || typeof window === "undefined") return;
-    window.localStorage.setItem(storageKey, JSON.stringify(filters));
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(filters));
+    } catch {
+      // Storage may be unavailable or full; keep filters working in memory.
+    }
   }, [filters, storageKey]);
 
   const filterTasks = (tasks: Task[]): Task[] => {

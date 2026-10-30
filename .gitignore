@@ -14,6 +14,8 @@ node_modules
 
 # Testing
 coverage
+logs/
+browserstack-artifacts/
 
 # Turbo
 .turbo
@@ -56,6 +58,8 @@ compose.override.yml
 apps/web/.tanstack/
 .pi/
 .omc/
+.superpowers/
 
 # TypeScript incremental build state
 *.tsbuildinfo
+.vitest/

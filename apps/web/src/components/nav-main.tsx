@@ -1,136 +1,117 @@
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import {
-  IconChevronRight,
-  IconCube,
-  IconLayoutDashboard,
-  IconMailOpened,
-  IconTimeline,
-  IconUsers,
-} from "@tabler/icons-react";
-import { useNavigate } from "@tanstack/react-router";
+  CircleCheck,
+  House,
+  Inbox,
+  type LucideIcon,
+  Mail,
+  Users,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
-import {
-  Collapsible,
-  CollapsiblePanel,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   SidebarGroup,
   SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { usePendingInvitations } from "@/hooks/queries/invitation/use-pending-invitations";
+import useGetNotifications from "@/hooks/queries/notification/use-get-notifications";
+import useGetAssignedTasks from "@/hooks/queries/task/use-get-assigned-tasks";
 import useActiveWorkspace from "@/hooks/queries/workspace/use-active-workspace";
 import { cn } from "@/lib/cn";
+
+type NavItem = {
+  title: string;
+  icon: LucideIcon;
+  url: string;
+  count?: number;
+  emphasizeCount?: boolean;
+};
 
 export function NavMain() {
   const { t } = useTranslation();
   const { data: workspace } = useActiveWorkspace();
   const navigate = useNavigate();
+  const pathname = useLocation({
+    select: (location) => location.pathname.replace(/\/+$/, ""),
+  });
   const { data: invitations = [] } = usePendingInvitations();
+  const { data: notifications = [] } = useGetNotifications(workspace?.id);
+  const { data: assignedTasks } = useGetAssignedTasks(workspace?.id, true);
 
   if (!workspace) return null;
 
-  const pendingCount = invitations.length;
+  const homeUrl = `/dashboard/workspace/${workspace.id}`;
+  const unreadCount = notifications.filter(
+    (notification) => !notification.isRead,
+  ).length;
 
-  const navItems = [
+  const navItems: NavItem[] = [
+    { title: t("navigation:sidebar.home"), icon: House, url: homeUrl },
     {
-      title: t("navigation:sidebar.activityFeed"),
-      url: `/dashboard/workspace/${workspace.id}/activity`,
-      isActive:
-        window.location.pathname ===
-        `/dashboard/workspace/${workspace.id}/activity`,
-      badge: null,
-      icon: IconTimeline,
+      title: t("navigation:sidebar.inbox"),
+      icon: Inbox,
+      url: `${homeUrl}/inbox`,
+      count: unreadCount,
+      emphasizeCount: true,
     },
     {
-      title: t("navigation:sidebar.projects"),
-      url: `/dashboard/workspace/${workspace.id}`,
-      isActive:
-        window.location.pathname === `/dashboard/workspace/${workspace.id}`,
-      badge: null,
-      icon: IconCube,
+      title: t("navigation:sidebar.myTasks"),
+      icon: CircleCheck,
+      url: `${homeUrl}/my-tasks`,
+      count: assignedTasks?.total,
     },
     {
       title: t("navigation:sidebar.members"),
-      url: `/dashboard/workspace/${workspace.id}/members`,
-      isActive:
-        window.location.pathname ===
-        `/dashboard/workspace/${workspace.id}/members`,
-      badge: null,
-      icon: IconUsers,
-    },
-    {
-      title: t("navigation:sidebar.invitations"),
-      url: "/dashboard/invitations",
-      isActive: window.location.pathname === "/dashboard/invitations",
-      badge: pendingCount > 0 ? pendingCount : null,
-      icon: IconMailOpened,
+      icon: Users,
+      url: `${homeUrl}/members`,
     },
   ];
 
+  // Invitations to other workspaces only matter while one is waiting.
+  if (invitations.length > 0) {
+    navItems.push({
+      title: t("navigation:sidebar.invitations"),
+      icon: Mail,
+      url: "/dashboard/invitations",
+      count: invitations.length,
+      emphasizeCount: true,
+    });
+  }
+
   return (
-    <Collapsible defaultOpen className="group/collapsible">
-      <SidebarGroup className="gap-1 p-2">
-        <CollapsibleTrigger
-          className="data-panel-open:[&_svg]:rotate-90"
-          render={
-            <SidebarGroupLabel className="h-7 cursor-pointer justify-between px-0 text-sidebar-accent-foreground" />
-          }
-        >
-          <span className="flex min-w-0 flex-1 items-center gap-2">
-            <IconLayoutDashboard
-              aria-hidden
-              className="size-3.5 shrink-0 text-sidebar-foreground/55"
-              stroke={1.5}
-            />
-            <span className="truncate">{t("navigation:sidebar.overview")}</span>
-          </span>
-          <IconChevronRight
-            aria-hidden
-            className="size-3.5 shrink-0 text-sidebar-foreground/60 transition-transform duration-200"
-            stroke={1.5}
-          />
-        </CollapsibleTrigger>
-        <CollapsiblePanel>
-          <SidebarGroupContent>
-            <SidebarMenu className="gap-0.5">
-              {navItems.map((item) => {
-                const ItemIcon = item.icon;
-                return (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      tooltip={item.title}
-                      isActive={item.isActive}
-                      size="default"
-                      className="h-8 gap-2.5 ps-2.5 text-sm hover:bg-transparent hover:text-sidebar-accent-foreground active:bg-transparent"
-                      onClick={() => navigate({ to: item.url })}
-                    >
-                      <ItemIcon
-                        aria-hidden
-                        size={16}
-                        stroke={1.5}
-                        className={cn(
-                          "shrink-0 text-sidebar-foreground/55",
-                          item.isActive && "text-sidebar-accent-foreground",
-                        )}
-                      />
-                      <span>{item.title}</span>
-                      {item.badge !== null && (
-                        <span className="ml-auto flex h-5 min-w-5 items-center justify-center rounded-sm border border-sidebar-border/60 px-1 text-[11px] font-medium text-sidebar-foreground/80">
-                          {item.badge}
-                        </span>
-                      )}
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </CollapsiblePanel>
-      </SidebarGroup>
-    </Collapsible>
+    <SidebarGroup className="gap-1 p-2">
+      <SidebarGroupContent>
+        <SidebarMenu className="gap-0.5">
+          {navItems.map((item) => (
+            <SidebarMenuItem key={item.url}>
+              <SidebarMenuButton
+                tooltip={item.title}
+                isActive={pathname === item.url}
+                size="default"
+                className="h-8 text-sm"
+                onClick={() => navigate({ to: item.url })}
+              >
+                <item.icon aria-hidden="true" />
+                <span>{item.title}</span>
+                {item.count ? (
+                  <span
+                    className={cn(
+                      "ml-auto flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full px-1 text-[11px] tabular-nums",
+                      item.emphasizeCount
+                        ? "bg-foreground font-semibold text-background"
+                        : "font-medium text-muted-foreground",
+                    )}
+                  >
+                    {item.count > 99 ? "99+" : item.count}
+                  </span>
+                ) : null}
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
+        </SidebarMenu>
+      </SidebarGroupContent>
+    </SidebarGroup>
   );
 }

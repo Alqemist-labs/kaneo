@@ -7,10 +7,9 @@ It builds on top of Kaneo and adds changes tailored to our internal usage.
 ## Added Features
 
 - Gravatar fallback for members who have not uploaded a profile picture.
-- Workspace-level activity feed.
 - Dedicated project labels view, with status-based statistics.
-- Label and filter improvements across board, backlog, gantt, search, and task views.
-- Seed data to make the activity feed easier to demo.
+- Long label names wrap instead of being truncated on task cards.
+- Product named Alqemist Tickets by default (instance name, emails, page titles, link previews).
 
 ## Development
 
@@ -33,7 +32,7 @@ The image is built from `Dockerfile.kaneo` and published automatically on pushes
 
 ## Original README
 
-The upstream Kaneo README (v2.24.0) is preserved here: [README.upstream.md](README.upstream.md).
+The upstream Kaneo README (v2.48.0) is preserved here: [README.upstream.md](README.upstream.md).
 
 ## License
 

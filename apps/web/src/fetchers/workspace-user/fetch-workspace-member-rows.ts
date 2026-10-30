@@ -29,6 +29,7 @@ export async function fetchWorkspaceMemberRows(
 ): Promise<WorkspaceMemberRow[]> {
   const response = await client.workspace[":workspaceId"].members.$get({
     param: { workspaceId },
+    query: {},
   });
 
   if (!response.ok) {

@@ -1,4 +1,5 @@
-import { Badge } from "@/components/ui/badge";
+import { useTranslation } from "react-i18next";
+import { localeCompareSort } from "@/lib/format";
 import { resolveLabelColor } from "@/lib/label-color";
 import type Task from "@/types/task";
 
@@ -7,15 +8,22 @@ export function TaskLabels({
 }: {
   labels: NonNullable<Task["labels"]>;
 }) {
+  const { i18n } = useTranslation();
+  const locale = i18n.resolvedLanguage || i18n.language;
+
   if (!labels.length) return null;
 
+  const sortedLabels = [...labels].sort((a, b) =>
+    localeCompareSort(a.name, b.name, locale),
+  );
+
   return (
-    <div className="flex min-w-0 flex-wrap gap-1">
-      {labels.map((label) => (
-        <Badge
+    <div className="flex min-w-0 flex-wrap gap-x-2.5 gap-y-1">
+      {sortedLabels.map((label) => (
+        <span
           key={label.id}
-          variant="outline"
-          className="flex h-auto min-h-5.5 max-w-full min-w-0 items-center gap-1.5 px-2 py-0.5 text-[10px] whitespace-normal break-words"
+          data-slot="task-label"
+          className="flex max-w-full min-w-0 items-center gap-1.5 font-medium text-[10px] text-foreground/85"
         >
           <span
             aria-hidden="true"
@@ -24,10 +32,10 @@ export function TaskLabels({
               backgroundColor: resolveLabelColor(label.color),
             }}
           />
-          <span className="min-w-0 flex-1 break-words" title={label.name}>
+          <span className="min-w-0 break-words" title={label.name}>
             {label.name}
           </span>
-        </Badge>
+        </span>
       ))}
     </div>
   );

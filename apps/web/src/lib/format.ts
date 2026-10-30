@@ -10,6 +10,21 @@ function getLocale(locale?: string) {
   return locale || i18n.resolvedLanguage || i18n.language || "en-US";
 }
 
+const collators = new Map<string, Intl.Collator>();
+
+export function localeCompareSort(a: string, b: string, locale?: string) {
+  const key = getLocale(locale);
+  let collator = collators.get(key);
+  if (!collator) {
+    collator = new Intl.Collator(key, {
+      sensitivity: "base",
+      numeric: true,
+    });
+    collators.set(key, collator);
+  }
+  return collator.compare(a, b);
+}
+
 export function formatDate(
   value: DateInput,
   options?: Intl.DateTimeFormatOptions,
@@ -41,11 +56,6 @@ export function formatDateMedium(value: DateInput, locale?: string) {
     },
     locale,
   );
-}
-
-/** Hour + minute only, e.g. "14:14". */
-export function formatTimeOnly(value: DateInput, locale?: string) {
-  return formatDate(value, { timeStyle: "short" }, locale);
 }
 
 /** Locale-aware full date and time (for tooltips next to relative labels like "yesterday"). */

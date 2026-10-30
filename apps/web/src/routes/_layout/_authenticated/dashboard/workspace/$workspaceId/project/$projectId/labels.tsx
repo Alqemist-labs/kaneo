@@ -1,21 +1,20 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import BoardToolbar from "@/components/board/board-toolbar";
 import ProjectLayout from "@/components/common/project-layout";
 import PageTitle from "@/components/page-title";
 import ProjectLabelsStatusTable from "@/components/project/project-labels-status-table";
+import { ActiveFiltersBar } from "@/components/project/task-filters/active-filters-bar";
+import { FilterMenu } from "@/components/project/task-filters/filter-menu";
+import { useFilterShortcuts } from "@/components/project/task-filters/use-filter-shortcuts";
+import { ProjectSearch } from "@/components/project/toolbar/project-search";
+import { TaskCount } from "@/components/project/toolbar/task-count";
+import { useProjectTaskView } from "@/components/project/toolbar/use-project-task-view";
 import TaskDetailsSheet from "@/components/task/task-details-sheet";
-import { shortcuts } from "@/constants/shortcuts";
 import useGetLabelsByWorkspace from "@/hooks/queries/label/use-get-labels-by-workspace";
 import { useGetTasks } from "@/hooks/queries/task/use-get-tasks";
-import { useGetActiveWorkspaceUsers } from "@/hooks/queries/workspace-users/use-get-active-workspace-users";
-import { useRegisterShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { useTaskFiltersWithLabelsSupport } from "@/hooks/use-task-filters-with-labels-support";
 import { collectProjectTasks } from "@/lib/project-label-status-stats";
-import type { SortConfig } from "@/lib/sort-tasks";
 import useProjectStore from "@/store/project";
-import { useUserPreferencesStore } from "@/store/user-preferences";
 
 type LabelsSearchParams = {
   taskId?: string;
@@ -37,24 +36,15 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data } = useGetTasks(projectId);
   const { project, setProject } = useProjectStore();
-  const { setViewMode, viewMode } = useUserPreferencesStore();
   const { data: workspaceLabels = [] } = useGetLabelsByWorkspace(workspaceId);
-  const { data: users } = useGetActiveWorkspaceUsers(workspaceId);
-
-  const [sort] = useState<SortConfig>({
-    field: "position",
-    direction: "asc",
+  const view = useProjectTaskView({
+    project,
+    projectId,
+    workspaceId,
+    scope: "board",
   });
-
-  const {
-    filters,
-    updateFilter,
-    updateLabelFilter,
-    updateCustomFieldFilter,
-    filteredProject,
-    hasActiveFilters,
-    clearFilters,
-  } = useTaskFiltersWithLabelsSupport(project, projectId);
+  const { filters } = view;
+  useFilterShortcuts(view.subjects, filters.clearFilters);
 
   const uniqueLabels = useMemo(
     () =>
@@ -90,97 +80,56 @@ function RouteComponent() {
     });
   }, [navigate]);
 
-  useRegisterShortcuts({
-    sequentialShortcuts: {
-      [shortcuts.view.prefix]: {
-        [shortcuts.view.board]: () => {
-          setViewMode("board");
-          navigate({
-            to: "/dashboard/workspace/$workspaceId/project/$projectId/board",
-            params: { workspaceId, projectId },
-          });
-        },
-        [shortcuts.view.list]: () => {
-          setViewMode("list");
-          navigate({
-            to: "/dashboard/workspace/$workspaceId/project/$projectId/board",
-            params: { workspaceId, projectId },
-          });
-        },
-        [shortcuts.view.gantt]: () =>
-          navigate({
-            to: "/dashboard/workspace/$workspaceId/project/$projectId/gantt",
-            params: { workspaceId, projectId },
-          }),
-        [shortcuts.view.backlog]: () =>
-          navigate({
-            to: "/dashboard/workspace/$workspaceId/project/$projectId/backlog",
-            params: { workspaceId, projectId },
-          }),
-        [shortcuts.view.labels]: () => {},
-      },
-    },
-  });
-
-  const taskCount = useMemo(
-    () =>
-      filteredProject
-        ? collectProjectTasks(filteredProject).length
-        : project
-          ? collectProjectTasks(project).length
-          : 0,
-    [filteredProject, project],
-  );
-
-  const tableProject = filteredProject ?? project ?? null;
+  const tableProject = filters.filteredProject ?? project ?? null;
 
   return (
     <ProjectLayout
       projectId={projectId}
       workspaceId={workspaceId}
       activeView="labels"
+      toolbar={
+        <>
+          <ProjectSearch value={view.search} onChange={view.setSearch} />
+          <FilterMenu
+            subjects={view.subjects}
+            activeCount={filters.activeFilterCount}
+          />
+        </>
+      }
+      summary={
+        <TaskCount
+          shown={tableProject ? collectProjectTasks(tableProject).length : 0}
+          total={project ? collectProjectTasks(project).length : 0}
+        />
+      }
+      filterBar={
+        <ActiveFiltersBar
+          subjects={view.subjects}
+          onClear={filters.clearFilters}
+          customFieldValues={filters.customFieldValues}
+        />
+      }
     >
       <PageTitle
-        title={`${project?.name ?? ""} — ${t("tasks:labelsBreakdown.pageTitle")}`}
-        hideAppName
+        title={
+          project
+            ? `${project.name} / ${t("tasks:labelsBreakdown.pageTitle")}`
+            : undefined
+        }
       />
-      <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
-        {project ? (
-          <BoardToolbar
-            project={project}
-            filters={filters}
-            updateFilter={updateFilter}
-            updateLabelFilter={updateLabelFilter}
-            updateCustomFieldFilter={updateCustomFieldFilter}
-            clearFilters={clearFilters}
-            hasActiveFilters={hasActiveFilters}
-            users={users}
+      <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-4">
+        {tableProject ? (
+          <ProjectLabelsStatusTable
+            project={tableProject}
+            uniqueLabels={uniqueLabels}
             workspaceLabels={workspaceLabels}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            sort={sort}
-            onSortChange={() => {}}
-            showSort={false}
-            showDisplayModeToggle={false}
+            activeLabelFilterIds={filters.filters.labels}
           />
-        ) : null}
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-4">
-          <p className="shrink-0 text-xs text-muted-foreground">
-            {t("tasks:labelsBreakdown.summary", { count: taskCount })}
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            {t("tasks:labelsBreakdown.loading")}
           </p>
-          {tableProject ? (
-            <ProjectLabelsStatusTable
-              project={tableProject}
-              uniqueLabels={uniqueLabels}
-              workspaceLabels={workspaceLabels}
-              activeLabelFilterIds={filters.labels}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              {t("tasks:labelsBreakdown.loading")}
-            </p>
-          )}
-        </div>
+        )}
       </div>
 
       <TaskDetailsSheet
