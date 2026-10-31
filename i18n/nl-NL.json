@@ -3835,7 +3835,8 @@
 			"progressColumn": "Voortgang",
 			"summary": "{{count}} taken in dit project",
 			"loading": "Laden…",
-			"noLabelsMatchFilter": "Geen labels komen overeen met het huidige filter. Pas het label-filter aan of wis het."
+			"noLabelsMatchFilter": "Geen labels komen overeen met het huidige filter. Pas het label-filter aan of wis het.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

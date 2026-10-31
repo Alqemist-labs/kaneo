@@ -3907,6 +3907,7 @@
 			"progressColumn": "Progression",
 			"summary": "{{count}} tâches dans ce projet",
 			"loading": "Chargement…",
+			"loadError": "Impossible de charger les labels.",
 			"noLabelsMatchFilter": "Aucun label ne correspond au filtre actuel. Modifiez ou réinitialisez le filtre sur les labels."
 		}
 	},

@@ -3835,7 +3835,8 @@
 			"progressColumn": "Напредок",
 			"summary": "{{count}} задачи во овој проект",
 			"loading": "Се вчитува…",
-			"noLabelsMatchFilter": "Ниту еден label не одговара на тековниот филтер. Променете или исчистете го филтерот за labels."
+			"noLabelsMatchFilter": "Ниту еден label не одговара на тековниот филтер. Променете или исчистете го филтерот за labels.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

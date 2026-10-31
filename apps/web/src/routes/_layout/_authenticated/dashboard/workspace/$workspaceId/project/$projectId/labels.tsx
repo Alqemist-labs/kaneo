@@ -36,7 +36,11 @@ function RouteComponent() {
   const navigate = useNavigate();
   const { data } = useGetTasks(projectId);
   const { project, setProject } = useProjectStore();
-  const { data: workspaceLabels = [] } = useGetLabelsByWorkspace(workspaceId);
+  const {
+    data: workspaceLabels = [],
+    isPending: labelsPending,
+    isError: labelsError,
+  } = useGetLabelsByWorkspace(workspaceId);
   const view = useProjectTaskView({
     project,
     projectId,
@@ -118,7 +122,11 @@ function RouteComponent() {
         }
       />
       <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-auto p-4">
-        {tableProject ? (
+        {labelsError ? (
+          <p className="text-sm text-destructive">
+            {t("tasks:labelsBreakdown.loadError")}
+          </p>
+        ) : tableProject && !labelsPending ? (
           <ProjectLabelsStatusTable
             project={tableProject}
             uniqueLabels={uniqueLabels}

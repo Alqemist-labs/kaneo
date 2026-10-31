@@ -3835,7 +3835,8 @@
 			"pageTitle": "Labels",
 			"progressColumn": "Progress",
 			"rowTotal": "Total",
-			"summary": "{{count}} tasks in this project"
+			"summary": "{{count}} tasks in this project",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

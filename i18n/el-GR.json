@@ -3835,7 +3835,8 @@
 			"progressColumn": "Πρόοδος",
 			"summary": "{{count}} εργασίες σε αυτό το έργο",
 			"loading": "Φόρτωση…",
-			"noLabelsMatchFilter": "Καμία ετικέτα δεν ταιριάζει με το τρέχον φίλτρο. Αλλάξτε ή εκκαθαρίστε το φίλτρο ετικετών."
+			"noLabelsMatchFilter": "Καμία ετικέτα δεν ταιριάζει με το τρέχον φίλτρο. Αλλάξτε ή εκκαθαρίστε το φίλτρο ετικετών.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

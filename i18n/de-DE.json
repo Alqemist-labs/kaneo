@@ -3835,7 +3835,8 @@
 			"progressColumn": "Fortschritt",
 			"summary": "{{count}} Aufgaben in diesem Projekt",
 			"loading": "Wird geladen…",
-			"noLabelsMatchFilter": "Kein Label entspricht dem aktuellen Filter. Passen Sie den Label-Filter an oder setzen Sie ihn zurück."
+			"noLabelsMatchFilter": "Kein Label entspricht dem aktuellen Filter. Passen Sie den Label-Filter an oder setzen Sie ihn zurück.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

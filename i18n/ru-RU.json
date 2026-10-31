@@ -4031,7 +4031,8 @@
 			"progressColumn": "Прогресс",
 			"summary": "{{count}} задач в этом проекте",
 			"loading": "Загрузка…",
-			"noLabelsMatchFilter": "Ни одна метка не соответствует текущему фильтру. Измените или сбросьте фильтр по меткам."
+			"noLabelsMatchFilter": "Ни одна метка не соответствует текущему фильтру. Измените или сбросьте фильтр по меткам.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

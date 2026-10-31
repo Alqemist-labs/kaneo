@@ -3979,7 +3979,8 @@
 			"progressColumn": "Прогрес",
 			"summary": "{{count}} завдань у цьому проєкті",
 			"loading": "Завантаження…",
-			"noLabelsMatchFilter": "Жодна мітка не відповідає поточному фільтру. Змініть або скиньте фільтр за мітками."
+			"noLabelsMatchFilter": "Жодна мітка не відповідає поточному фільтру. Змініть або скиньте фільтр за мітками.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {

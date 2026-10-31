@@ -3835,6 +3835,7 @@
 			"progressColumn": "Progress",
 			"summary": "{{count}} tasks in this project",
 			"loading": "Loading…",
+			"loadError": "Labels could not be loaded.",
 			"noLabelsMatchFilter": "No labels match the current filter. Change or clear the label filter."
 		}
 	},

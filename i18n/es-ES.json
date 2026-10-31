@@ -3907,7 +3907,8 @@
 			"progressColumn": "Progreso",
 			"summary": "{{count}} tareas en este proyecto",
 			"loading": "Cargando…",
-			"noLabelsMatchFilter": "Ninguna etiqueta coincide con el filtro actual. Cambia o borra el filtro de etiquetas."
+			"noLabelsMatchFilter": "Ninguna etiqueta coincide con el filtro actual. Cambia o borra el filtro de etiquetas.",
+			"loadError": "Labels could not be loaded."
 		}
 	},
 	"invitations": {
